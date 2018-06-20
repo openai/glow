@@ -52,7 +52,7 @@ def adam(params, cost_or_grads, alpha=3e-4, hps=None, epsilon=1e-8):
             mom1_new = g
         m2_new = beta2 * mom2 + (1. - beta2) * tf.square(g)
         delta_t = mom1_new / (tf.sqrt(m2_new) + epsilon)
-        w_new = hps.beta3 * w - alpha_t * delta_t
+        w_new = hps.weight_decay * w - alpha_t * delta_t
         updates.append(mom2.assign(m2_new))
         updates.append(w.assign(w_new))
 
@@ -93,7 +93,7 @@ def adam2(params, cost_or_grads, alpha=3e-4, hps=None, epsilon=1e-8):
             mom1_new = g1
         m2_new = beta2 * mom2 + (1. - beta2) * g2
         delta_t = mom1_new / (tf.sqrt(m2_new) + epsilon)
-        w_new = hps.beta3 * w - alpha_t * delta_t
+        w_new = hps.weight_decay * w - alpha_t * delta_t
         updates.append(mom2.assign(m2_new))
         updates.append(w.assign(w_new))
 
@@ -164,7 +164,7 @@ def adamax(params, cost_or_grads, alpha=3e-4, hps=None, epsilon=1e-8):
             mom1_new = g
         m2_new = tf.maximum(beta2 * mom2, abs(g))
         delta_t = mom1_new / (m2_new + epsilon)
-        w_new = hps.beta3 * w - alpha_t * delta_t
+        w_new = hps.weight_decay * w - alpha_t * delta_t
         updates.append(mom2.assign(m2_new))
         updates.append(w.assign(w_new))
 
@@ -201,7 +201,7 @@ def adam(params, cost_or_grads, alpha=3e-4, hps=None, epsilon=1e-8):
             mom1_new = g
         m2_new = beta2 * mom2 + (1. - beta2) * tf.square(g)
         delta_t = mom1_new / (tf.sqrt(m2_new) + epsilon)
-        w_new = hps.beta3 * w - alpha_t * delta_t
+        w_new = hps.weight_decay * w - alpha_t * delta_t
         updates.append(mom2.assign(m2_new))
         updates.append(w.assign(w_new))
 

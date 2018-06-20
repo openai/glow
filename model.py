@@ -1,6 +1,7 @@
 import tensorflow as tf
-import zeus
-import zeus.tfops as Z
+
+import tfops as Z
+import optim
 import numpy as np
 import horovod.tensorflow as hvd
 from tensorflow.contrib.framework.python.ops import add_arg_scope, arg_scope
@@ -26,7 +27,7 @@ def abstract_model_xy(sess, hps, feeds, train_iterator, test_iterator, data_init
     else:
         gs = tf.gradients(loss_train, all_params)
 
-    optimizer = {'adam':zeus.optim.adam, 'adamax':zeus.optim.adamax, 'adam2':zeus.optim.adam2}[hps.optimizer]
+    optimizer = {'adam':optim.adam, 'adamax':optim.adamax, 'adam2':optim.adam2}[hps.optimizer]
 
     train_op, polyak_swap_op, ema = optimizer(all_params, gs, alpha=lr, hps=hps)
     if hps.direct_iterator:
@@ -249,11 +250,7 @@ def revnet2d(name, z, logdet, hps, reverse=False):
                 z, logdet = checkpoint(z, logdet)
                 z, logdet = revnet2d_step(str(i), z, logdet, hps, reverse)
             z, logdet = checkpoint(z, logdet)
-            if hps.extra_invertible:
-                z, logdet = invertible_1x1_conv("invconv", z, logdet, reverse)
         else:
-            if hps.extra_invertible:
-                z, logdet = invertible_1x1_conv("invconv", z, logdet, reverse)
             for i in reversed(range(hps.depth)):
                 z, logdet = revnet2d_step(str(i), z, logdet, hps, reverse)
     return z, logdet
@@ -349,7 +346,9 @@ def f_resnet(name, h, width, n_out = None):
 # Invertible 1x1 conv
 @add_arg_scope
 def invertible_1x1_conv(name, z, logdet, reverse=False):
-    if True:
+
+    if True: # Set to "False" to use the LU-decomposed version
+
         with tf.variable_scope(name):
 
             shape = Z.int_shape(z)

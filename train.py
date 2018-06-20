@@ -97,30 +97,6 @@ def get_data(hps, sess):
 
     return train_iterator, test_iterator, data_init
 
-def check_test_iterator(sess, test_iterator):
-    ys = []
-    xms = []
-    if hps.direct_iterator:
-        data = test_iterator.get_next()
-    for it in range(hps.full_test_its):
-        if hps.direct_iterator:
-            x, y = sess.run(data)
-        else:
-            x, y = test_iterator()
-        ys.append(y)
-        xms.append(np.mean(x, axis=(1,2,3)))
-    ys = np.concatenate(ys, axis=0)
-    xms = np.concatenate(xms, axis=0)
-    print(hvd.rank(), ys.shape, xms.shape, np.unique(ys, return_counts=True), np.mean(xms))
-
-def process_results(results):
-    stats = ['local_loss', 'bits_x', 'bits_y', 'pred_loss']
-    assert len(stats) == results.shape[0]
-    res_dict = {}
-    for i in range(len(stats)):
-        res_dict[stats[i]] = "{:.4f}".format(results[i])
-    return res_dict
-
 def main(hps):
 
     # Initialize Horovod.
@@ -137,17 +113,8 @@ def main(hps):
     train_iterator, test_iterator, data_init = get_data(hps, sess)
     hps.train_its, hps.test_its, hps.full_test_its = get_its(hps)
 
-    if hps.check_test_iterator:
-        if hvd.rank() == 0:
-            print(hps)
-        check_test_iterator(sess, test_iterator)
-        check_test_iterator(sess, test_iterator)
-        exit()
-
     # Create log dir
     logdirs, _print = zeus.get_logdirs(['', '_ckpt'])
-    if hvd.rank() == 0:
-        hps.debug_logdir = logdirs[1]
 
     # Create model
     import model
@@ -166,35 +133,18 @@ def main(hps):
     n_processed = 0
     n_images = 0
     train_time = 0.0
-    test_error_best = 1
     test_loss_best = 999999
 
     tcurr = time.time()
     for epoch in range(1,hps.epochs):
-        if hps.debug_init:
-            if hvd.rank() == 0:
-                model.save(logdirs[1] + "model_init.ckpt")
-            draw_samples(epoch)
-            exit()
-
-        #if hps.restore_path:
-        #    draw_class(epoch)
-        #    print("Done")
-        #    exit()
 
         t0 = time.time()
 
         train_results = []
         for it in range(hps.train_its):
 
-            # Set learning rate
-            # lr = hps.lr
-            _warmup = min(1., n_processed / (hps.n_train * hps.epochs_warmup))
-            lr = hps.lr * _warmup
-            if hps.lr_scalemode == 1:
-                lr *= hvd.size()
-            if hps.lr_scalemode == 2:
-                lr *= np.sqrt(hvd.size())
+            # Set learning rate, linearly annealed from 0 in the first hps.epochs_warmup epochs.
+            lr = hps.lr * min(1., n_processed / (hps.n_train * hps.epochs_warmup))
 
             # Run a training step synchronously.
             _t0 = time.time()
@@ -209,7 +159,6 @@ def main(hps):
         train_results = np.mean(np.asarray(train_results), axis=0)
         dt = time.time() - t0
         train_time += dt
-        ips = hps.train_its * hvd.size() * hps.n_batch_train / dt  # Images per second wrt anchor resolution
 
         if epoch < 10 or (epoch < 50 and epoch % 10 == 0) or epoch % hps.epochs_full_valid == 0:
             test_results = []
@@ -217,6 +166,7 @@ def main(hps):
 
             t0 = time.time()
             #model.polyak_swap()
+
             if epoch % hps.epochs_full_valid == 0:
                 # Full validation run
                 for it in range(hps.full_test_its):
@@ -228,10 +178,7 @@ def main(hps):
                         test_loss_best = test_results[0]
                         model.save(logdirs[1]+"model_best_loss.ckpt")
                         msg += ' *'
-                # if test_results[-1] < test_error_best:
-                #     test_error_best = test_results[-1]
-                #     model.save(logdirs[1]+"model_best_accuracy.ckpt")
-                #     msg += ' **'
+
             dtest = time.time() - t0
 
             # Full sample uses all machines, 1 sample per machine
@@ -243,14 +190,12 @@ def main(hps):
             if hvd.rank() == 0:
                 dcurr = time.time() - tcurr
                 tcurr = time.time()
-                _print(epoch, n_processed, n_images, "{:.1f} {:.1f} {:.1f} {:.1f} {:.1f}".format(ips, dt, dtest, dfullsample, dcurr), train_results, test_results, msg, np_precision=4)
+                _print(epoch, n_processed, n_images, "{:.1f} {:.1f} {:.1f} {:.1f}".format(dt, dtest, dfullsample, dcurr), train_results, test_results, msg, np_precision=4)
 
             #model.polyak_swap()
 
-
     if hvd.rank() == 0:
         _print("Finished!")
-
 
 # Get number of training and validation iterations
 def get_its(hps):
@@ -289,8 +234,6 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", action='store_true', help="Verbose mode")
-    parser.add_argument("--debug", action='store_true', help="Debug mode")
-    parser.add_argument("--debug_init", action='store_true', help="Debug mode")
     parser.add_argument('--restore_path', type=str, default='', help="Location of checkpoint to restore")
 
     # Dataset hyperparams:
@@ -300,8 +243,6 @@ if __name__ == "__main__":
     parser.add_argument("--dal", type=int, default=1, help="Data augmentation level: 0=None, 1=Standard, 2=Extra")
 
     # New dataloader params
-    # parser.add_argument("--version", type = int, default=6)
-    parser.add_argument("--check_test_iterator", action='store_true', help="Debug mode")
     parser.add_argument("--fmap", type=int, default=1, help="# Threads for parallel file reading")
     parser.add_argument("--pmap", type=int, default=16, help="# Threads for parallel map")
 
@@ -310,13 +251,12 @@ if __name__ == "__main__":
     parser.add_argument("--n_test", type=int, default=-1, help="Valid epoch size")
     parser.add_argument("--n_batch_train", type=int, default=64, help="Minibatch size")
     parser.add_argument("--n_batch_test", type=int, default=50, help="Minibatch size")
-    parser.add_argument("--n_batch_init", type=int, default=256, help="Minibatch size for init")
+    parser.add_argument("--n_batch_init", type=int, default=256, help="Minibatch size for data-dependent init")
     parser.add_argument("--optimizer", type=str, default="adamax", help="adam or adamax")
     parser.add_argument("--lr", type=float, default=0.001, help="Base learning rate")
-    parser.add_argument("--lr_scalemode", type=int, default=0, help="Type of learning rate scaling. 0=none, 1=linear, 2=sqrt.")
     parser.add_argument("--beta1", type=float, default=.9, help="Adam beta1")
     parser.add_argument("--polyak_epochs", type=float, default=1, help="Nr of averaging epochs for Polyak and beta2")
-    parser.add_argument("--beta3", type=float, default=1., help="Adam beta3")
+    parser.add_argument("--weight_decay", type=float, default=1., help="Weight decay. Switched off by default.")
     parser.add_argument("--epochs", type=int, default=1000000, help="Total number of training epochs")
     parser.add_argument("--epochs_warmup", type=int, default=10, help="Warmup epochs")
     parser.add_argument("--epochs_full_valid", type=int, default=50, help="Epochs between valid")
@@ -335,17 +275,13 @@ if __name__ == "__main__":
     # Synthesis/Sampling hyperparameters:
     parser.add_argument("--n_sample", type=int, default=1, help="minibatch size for sample")
     parser.add_argument("--epochs_full_sample", type=int, default=50, help="Epochs between full scale sample")
-    parser.add_argument("--eps_beta", type=float, default=0.95, help="Eps beta for samples")
 
     # Ablation
     parser.add_argument("--learntop", action="store_true", help="Use y conditioning")
     parser.add_argument("--ycond", action="store_true", help="Use y conditioning")
-    parser.add_argument("--seed", type=int, default=0, help="Seed for ablation")
+    parser.add_argument("--seed", type=int, default=0, help="Random seed")
     parser.add_argument("--flow_permutation", type=int, default=2, help="Type of flow. 0=reverse (realnvp), 1=shuffle, 2=invconv (ours)")
     parser.add_argument("--flow_coupling", type=int, default=0, help="Coupling type: 0=additive, 1=affine")
-    parser.add_argument("--extra_invertible", type=int, default=0, help="Whether to put and extra inver 1x1 conv")
 
-
-    #parser.add_argument("--sampling", action='store_true', help="Only sampling")
     hps = parser.parse_args() # So error if typo
     main(hps)
