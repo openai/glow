@@ -7,7 +7,6 @@ import horovod.tensorflow as hvd
 import time, sys, os
 import numpy as np
 import zeus
-from utils import ResultLogger
 
 learn = tf.contrib.learn
 
@@ -170,10 +169,6 @@ def main(hps):
     test_error_best = 1
     test_loss_best = 999999
 
-    if hvd.rank() == 0:
-        train_logger = ResultLogger(logdirs[0] + "train.txt", **hps.__dict__)
-        test_logger = ResultLogger(logdirs[0] + "test.txt", **hps.__dict__)
-
     tcurr = time.time()
     for epoch in range(1,hps.epochs):
         if hps.debug_init:
@@ -214,8 +209,6 @@ def main(hps):
         train_results = np.mean(np.asarray(train_results), axis=0)
         dt = time.time() - t0
         train_time += dt
-        if hvd.rank() == 0:
-            train_logger.log(epoch=epoch, n_processed=n_processed, n_images=n_images, train_time=int(train_time), **process_results(train_results))
         ips = hps.train_its * hvd.size() * hps.n_batch_train / dt  # Images per second wrt anchor resolution
 
         if epoch < 10 or (epoch < 50 and epoch % 10 == 0) or epoch % hps.epochs_full_valid == 0:
@@ -229,8 +222,6 @@ def main(hps):
                 for it in range(hps.full_test_its):
                     test_results += [model.test()]
                 test_results = np.mean(np.asarray(test_results), axis=0)
-                if hvd.rank() == 0:
-                    test_logger.log(epoch=epoch, n_processed=n_processed, n_images=n_images, **process_results(test_results))
 
                 if hvd.rank() == 0:
                     if test_results[0] < test_loss_best:
