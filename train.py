@@ -2,10 +2,13 @@
 
 # Modified Horovod MNIST example
 
-import tensorflow as tf
+import os
+import sys
+import time
+
 import horovod.tensorflow as hvd
-import time, sys, os
 import numpy as np
+import tensorflow as tf
 import zeus
 
 learn = tf.contrib.learn
@@ -88,7 +91,7 @@ def get_data(hps, sess):
 
     elif hps.problem in ['mnist','cifar10']:
         hps.direct_iterator = False
-        import mnistcifar10.get_data as v
+        import data_loaders.get_mnist_cifar as v
         train_iterator, test_iterator, data_init = \
             v.get_data(hps.problem, hvd.size(), hvd.rank(), hps.dal, hps.local_batch_train, hps.local_batch_test, hps.local_batch_init,  hps.image_size)
 

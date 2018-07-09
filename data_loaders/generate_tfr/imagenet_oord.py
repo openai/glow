@@ -13,24 +13,9 @@
 # limitations under the License.
 # ==============================================================================
 
-r"""LSUN dataset formatting.
+"""
+Generate tfrecords for ImageNet 32x32 and 64x64. Downloaded from http://image-net.org/small/download.php
 
-Download and format the Imagenet dataset as follow:
-mkdir [IMAGENET_PATH]
-cd [IMAGENET_PATH]
-for FILENAME in train_32x32.tar valid_32x32.tar train_64x64.tar valid_64x64.tar
-do
-    curl -O http://image-net.org/small/$FILENAME
-    tar -xvf $FILENAME
-done
-
-Then use the script as follow:
-for DIRNAME in train_32x32 valid_32x32 train_64x64 valid_64x64
-do
-    python imnet_formatting.py \
-        --file_out $DIRNAME \
-        --fn_root $DIRNAME
-done
 
 """
 

@@ -11,12 +11,13 @@ def parse_tfrecord_tf(record, res, rnd_crop):
         'shape': tf.FixedLenFeature([3],tf.int64),
         'data': tf.FixedLenFeature([], tf.string),
         'label': tf.FixedLenFeature([1],tf.int64)})
+    # to get celeba attr, use 'attr': tf.FixedLenFeature([40], tf.int64)
     #shape = features['shape']
     data, label, shape = features['data'], features['label'], features['shape']
     label = tf.cast(tf.reshape(label, shape=[]), dtype=tf.int32)
     img = tf.decode_raw(data, tf.uint8)
     if rnd_crop:
-        # For LSUN Realnvp only
+        # For LSUN Realnvp only - random crop
         img = tf.reshape(img, shape)
         img = tf.random_crop(img, [res, res, 3])
     img = tf.reshape(img, [res, res, 3])
