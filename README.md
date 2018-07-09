@@ -8,11 +8,11 @@ Code for reproducing results in "Glow: Generative Flow with Invertible 1x1 Convo
  - Horovod (tested with v0.13.4) and (Open)MPI
 
 ## Download datasets
-The datasets are in the Google Cloud locations `https://storage.googleapis.com/glow-demo/{dataset_name}-tfr.tar`, where dataset names are `celeba, imagenet-oord, imagenet, lsun_realnvp, lsun`.
+The datasets are in the Google Cloud locations `https://storage.googleapis.com/glow-demo/data/{dataset_name}-tfr.tar`, where dataset names are `celeba, imagenet-oord, imagenet, lsun_realnvp, lsun`.
 
 To download and extract celeb for example, run
 ```
-curl https://storage.googleapis.com/glow-demo/celeb-tfr.tar
+curl https://storage.googleapis.com/glow-demo/data/celeba-tfr.tar
 tar -xvf celeb-tfr.tar
 ```
 Change `hps.data_dir` in train.py file to point to the above folder (or use the `--data_dir` flag when you run train.py)
