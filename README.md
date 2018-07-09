@@ -1,6 +1,6 @@
 # Glow
 
-Code for reproducing results in "Glow: Generative Flow with Invertible 1x1 Convolutions"
+Code for reproducing results in ["Glow: Generative Flow with Invertible 1x1 Convolutions"](https://d4mucfpksywv.cloudfront.net/research-covers/glow/paper/glow.pdf)
 
 ## Requirements
 
@@ -8,7 +8,16 @@ Code for reproducing results in "Glow: Generative Flow with Invertible 1x1 Convo
  - Horovod (tested with v0.13.4) and (Open)MPI
 
 ## Download datasets
-The datasets are in the Google Cloud locations `https://storage.googleapis.com/glow-demo/data/{dataset_name}-tfr.tar`, where dataset names are `celeba, imagenet-oord, imagenet, lsun_realnvp, lsun`.
+The datasets are in the Google Cloud locations `https://storage.googleapis.com/glow-demo/data/{dataset_name}-tfr.tar`. The dataset_names are below, we mention the exact preprocessing / downsampling method for a correct comparison of likelihood.
+
+Quantitative results -
+imagenet-oord: Unconditional ImageNet 32x32 and 64x64, as described in PixelRNN/RealNVP papers (we downloaded [this](http://image-net.org/small/download.php) processed version).
+lsun_realnvp: LSUN 96x96. Random 64x64 crops taken at processing time, as described in RealNVP.
+
+Qualitative results -
+celeba: CelebA-HQ 1024x1024 dataset, as described in Progressive growing of GAN's.
+imagenet: ImageNet 32x32 and 64x64 with class labels. Centre cropped, area downsampled.
+lsun: LSUN 256x256. Centre cropped, area downsampled.
 
 To download and extract celeb for example, run
 ```
