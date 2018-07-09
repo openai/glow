@@ -60,7 +60,7 @@ mpiexec -n 40 python train.py --problem celeba --image_size 256 --n_level 6 --de
 
 ##### LSUN 96x96 and 128x128 Qualitative result
 ```
-mpiexec -n 40 python train.py --problem lsun --category bedroom/church_outdoor/tower --image_size [96/128] --n_level 5 --depth 64 --flow_permutation 2 --flow_coupling 0 --seed 0 --learntop --lr 0.001 --n_bits_x 5
+mpiexec -n 40 python train.py --problem lsun --category [bedroom/church_outdoor/tower] --image_size [96/128] --n_level 5 --depth 64 --flow_permutation 2 --flow_coupling 0 --seed 0 --learntop --lr 0.001 --n_bits_x 5
 ```
 
 ##### Conditional CIFAR-10 Qualitative result
