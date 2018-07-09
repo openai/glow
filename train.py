@@ -264,11 +264,10 @@ if __name__ == "__main__":
     parser.add_argument("--epochs_warmup", type=int, default=10, help="Warmup epochs")
     parser.add_argument("--epochs_full_valid", type=int, default=50, help="Epochs between valid")
     parser.add_argument("--gradient_checkpointing", type=int, default=1, help="Use memory saving gradients")
-    parser.add_argument("--shift", type=int, default=1, help="Shift rank to resolution_id for better init")
 
     # Model hyperparams:
     parser.add_argument("--image_size", type=int, default=-1, help="Image size")
-    parser.add_argument("--anchor_size", type=int, default=32, help = "Anchor size for batches")
+    parser.add_argument("--anchor_size", type=int, default=32, help = "Anchor size for deciding batch size")
     parser.add_argument("--width", type=int, default=512, help="Width of hidden layers")
     parser.add_argument("--depth", type=int, default=48, help="Depth of network")
     parser.add_argument("--weight_y", type=float, default=0.00, help="Weight of log p(y|x) in weighted loss")
@@ -280,7 +279,7 @@ if __name__ == "__main__":
     parser.add_argument("--epochs_full_sample", type=int, default=50, help="Epochs between full scale sample")
 
     # Ablation
-    parser.add_argument("--learntop", action="store_true", help="Use y conditioning")
+    parser.add_argument("--learntop", action="store_true", help="Learn spatial prior")
     parser.add_argument("--ycond", action="store_true", help="Use y conditioning")
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
     parser.add_argument("--flow_permutation", type=int, default=2, help="Type of flow. 0=reverse (realnvp), 1=shuffle, 2=invconv (ours)")
