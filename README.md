@@ -10,14 +10,14 @@ Code for reproducing results in ["Glow: Generative Flow with Invertible 1x1 Conv
 ## Download datasets
 The datasets are in the Google Cloud locations `https://storage.googleapis.com/glow-demo/data/{dataset_name}-tfr.tar`. The dataset_names are below, we mention the exact preprocessing / downsampling method for a correct comparison of likelihood.
 
-Quantitative results -
-imagenet-oord: Unconditional ImageNet 32x32 and 64x64, as described in PixelRNN/RealNVP papers (we downloaded [this](http://image-net.org/small/download.php) processed version).
-lsun_realnvp: LSUN 96x96. Random 64x64 crops taken at processing time, as described in RealNVP.
+Quantitative results
+- `imagenet-oord` - Unconditional ImageNet 32x32 and 64x64, as described in PixelRNN/RealNVP papers (we downloaded [this](http://image-net.org/small/download.php) processed version).
+- `lsun_realnvp` - LSUN 96x96. Random 64x64 crops taken at processing time, as described in RealNVP.
 
-Qualitative results -
-celeba: CelebA-HQ 1024x1024 dataset, as described in Progressive growing of GAN's.
-imagenet: ImageNet 32x32 and 64x64 with class labels. Centre cropped, area downsampled.
-lsun: LSUN 256x256. Centre cropped, area downsampled.
+Qualitative results
+- `celeba` - CelebA-HQ 1024x1024 dataset, as described in Progressive growing of GAN's.
+- `imagenet` - ImageNet 32x32 and 64x64 with class labels. Centre cropped, area downsampled.
+- `lsun` - LSUN 256x256. Centre cropped, area downsampled.
 
 To download and extract celeb for example, run
 ```
