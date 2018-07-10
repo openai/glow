@@ -1,5 +1,5 @@
 import tensorflow as tf
-import zeus.tfops as Z
+import tfops as Z
 import horovod.tensorflow as hvd
 
 # Optimizers

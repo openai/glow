@@ -4,7 +4,7 @@ import tfops as Z
 import optim
 import numpy as np
 import horovod.tensorflow as hvd
-from tensorflow.contrib.framework.python.ops import add_arg_scope, arg_scope
+from tensorflow.contrib.framework.python.ops import add_arg_scope
 
 
 '''

@@ -9,14 +9,19 @@ import time
 import horovod.tensorflow as hvd
 import numpy as np
 import tensorflow as tf
-import zeus
+import graphics
+from utils import ResultLogger
 
 learn = tf.contrib.learn
 
 # Surpress verbose warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-def init_visualizations(hps, model, logdirs):
+def _print(*args, **kwargs):
+    if hvd.rank() == 0:
+        print(*args, **kwargs)
+
+def init_visualizations(hps, model, logdir):
 
     def decode_batch(y, eps):
         n_batch = hps.local_batch_train
@@ -50,8 +55,7 @@ def init_visualizations(hps, model, logdirs):
         
         for i in range(len(x_samples)):
             x_sample = np.reshape(x_samples[i], (n_batch, hps.image_size, hps.image_size, 3))
-            zeus.graphics.save_raster(x_sample, logdirs[0] + 'epoch_{}_sample_{}.png'.format(epoch, i))
-            #zeus.graphics.save_raster(x_sample, logdirs[0] + 'sample{}.png'.format(i), width=np.sqrt(n_samples))
+            graphics.save_raster(x_sample, logdir + 'epoch_{}_sample_{}.png'.format(epoch, i))
 
     return draw_samples
 
@@ -75,8 +79,8 @@ def get_data(hps, sess):
     if hps.category:
         hps.data_dir += ('/%s' % hps.category)
 
+    # Use anchor_size to rescale batch size based on image_size
     s = hps.anchor_size
-
     hps.local_batch_train = hps.n_batch_train * s * s // (hps.image_size * hps.image_size)
     hps.local_batch_test = {64:50, 32:25, 16:10, 8:5, 4:2, 2:2, 1:1}[hps.local_batch_train]  # round down to closest divisor of 50
     hps.local_batch_init = hps.n_batch_init * s * s // (hps.image_size * hps.image_size)
@@ -100,6 +104,14 @@ def get_data(hps, sess):
 
     return train_iterator, test_iterator, data_init
 
+def process_results(results):
+    stats = ['loss', 'bits_x', 'bits_y', 'pred_loss']
+    assert len(stats) == results.shape[0]
+    res_dict = {}
+    for i in range(len(stats)):
+        res_dict[stats[i]] = "{:.4f}".format(results[i])
+    return res_dict
+
 def main(hps):
 
     # Initialize Horovod.
@@ -117,19 +129,20 @@ def main(hps):
     hps.train_its, hps.test_its, hps.full_test_its = get_its(hps)
 
     # Create log dir
-    logdirs, _print = zeus.get_logdirs(['', '_ckpt'])
+    logdir = os.path.abspath(hps.logdir) + "/"
+    if not os.path.exists(logdir):
+        os.mkdir(logdir)
 
     # Create model
     import model
     model = model.model(sess, hps, train_iterator, test_iterator, data_init)
 
     # Initialize visualization functions
-    draw_samples = init_visualizations(hps, model, logdirs)
+    draw_samples = init_visualizations(hps, model, logdir)
 
-    if hvd.rank() == 0:
-        _print(hps)
-        _print('Starting training. Logging to', logdirs[0])
-        _print('epoch n_processed n_images pps dtrain dtest dsample dtot train_results test_results msg')
+    _print(hps)
+    _print('Starting training. Logging to', logdir)
+    _print('epoch n_processed n_images ips dtrain dtest dsample dtot train_results test_results msg')
 
     # Train
     sess.graph.finalize()
@@ -138,10 +151,14 @@ def main(hps):
     train_time = 0.0
     test_loss_best = 999999
 
+    if hvd.rank() == 0:
+        train_logger = ResultLogger(logdir + "train.txt", **hps.__dict__)
+        test_logger = ResultLogger(logdir + "test.txt", **hps.__dict__)
+
     tcurr = time.time()
     for epoch in range(1,hps.epochs):
 
-        t0 = time.time()
+        t = time.time()
 
         train_results = []
         for it in range(hps.train_its):
@@ -150,24 +167,29 @@ def main(hps):
             lr = hps.lr * min(1., n_processed / (hps.n_train * hps.epochs_warmup))
 
             # Run a training step synchronously.
-            _t0 = time.time()
+            _t = time.time()
             train_results += [model.train(lr)]
             if hps.verbose and hvd.rank() == 0:
-                _print(n_processed, time.time()-_t0, train_results[-1])
+                _print(n_processed, time.time()-_t, train_results[-1])
                 sys.stdout.flush()
 
             n_processed += hvd.size() * hps.n_batch_train  # Images seen wrt anchor resolution
             n_images += hvd.size() * hps.local_batch_train # Actual images seen at current resolution
 
         train_results = np.mean(np.asarray(train_results), axis=0)
-        dt = time.time() - t0
-        train_time += dt
+
+        dtrain = time.time() - t
+        ips = (hps.train_its * hvd.size() * hps.local_batch_train) / dtrain
+        train_time += dtrain
+
+        if hvd.rank() == 0:
+            train_logger.log(epoch=epoch, n_processed=n_processed, n_images=n_images, train_time=int(train_time), **process_results(train_results))
 
         if epoch < 10 or (epoch < 50 and epoch % 10 == 0) or epoch % hps.epochs_full_valid == 0:
             test_results = []
             msg = ''
 
-            t0 = time.time()
+            t = time.time()
             #model.polyak_swap()
 
             if epoch % hps.epochs_full_valid == 0:
@@ -177,23 +199,26 @@ def main(hps):
                 test_results = np.mean(np.asarray(test_results), axis=0)
 
                 if hvd.rank() == 0:
+                    test_logger.log(epoch=epoch, n_processed=n_processed, n_images=n_images, **process_results(test_results))
+
+                    # Save checkpoint
                     if test_results[0] < test_loss_best:
                         test_loss_best = test_results[0]
-                        model.save(logdirs[1]+"model_best_loss.ckpt")
+                        model.save(logdir+"model_best_loss.ckpt")
                         msg += ' *'
 
-            dtest = time.time() - t0
+            dtest = time.time() - t
 
-            # Full sample uses all machines, 1 sample per machine
-            t0 = time.time()
+            # Sample
+            t = time.time()
             if epoch == 1 or epoch == 10 or epoch % hps.epochs_full_sample == 0:
                 draw_samples(epoch)
-            dfullsample = time.time() - t0
+            dsample = time.time() - t
 
             if hvd.rank() == 0:
                 dcurr = time.time() - tcurr
                 tcurr = time.time()
-                _print(epoch, n_processed, n_images, "{:.1f} {:.1f} {:.1f} {:.1f}".format(dt, dtest, dfullsample, dcurr), train_results, test_results, msg, np_precision=4)
+                _print(epoch, n_processed, n_images, "{:.1f} {:.1f} {:.1f} {:.1f} {:.1f}".format(ips, dtrain, dtest, dsample, dcurr), train_results, test_results, msg)
 
             #model.polyak_swap()
 
@@ -237,12 +262,13 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", action='store_true', help="Verbose mode")
-    parser.add_argument('--restore_path', type=str, default='', help="Location of checkpoint to restore")
+    parser.add_argument("--restore_path", type=str, default='', help="Location of checkpoint to restore")
+    parser.add_argument("--logdir", type=str, default='./logs', help="Location to save logs")
 
     # Dataset hyperparams:
-    parser.add_argument("--problem", type=str, default='imagenet', help="Problem (mnist/cifar10/imagenet")
+    parser.add_argument("--problem", type=str, default='cifar10', help="Problem (mnist/cifar10/imagenet")
     parser.add_argument("--category", type=str, default='', help="LSUN category")
-    parser.add_argument("--data_dir", type=str, default="", help="Location of data")
+    parser.add_argument("--data_dir", type=str, default='', help="Location of data")
     parser.add_argument("--dal", type=int, default=1, help="Data augmentation level: 0=None, 1=Standard, 2=Extra")
 
     # New dataloader params
@@ -269,7 +295,7 @@ if __name__ == "__main__":
     parser.add_argument("--image_size", type=int, default=-1, help="Image size")
     parser.add_argument("--anchor_size", type=int, default=32, help = "Anchor size for deciding batch size")
     parser.add_argument("--width", type=int, default=512, help="Width of hidden layers")
-    parser.add_argument("--depth", type=int, default=48, help="Depth of network")
+    parser.add_argument("--depth", type=int, default=32, help="Depth of network")
     parser.add_argument("--weight_y", type=float, default=0.00, help="Weight of log p(y|x) in weighted loss")
     parser.add_argument("--n_bits_x", type=int, default=8, help="Number of bits of x")
     parser.add_argument("--n_levels", type=int, default=3, help="Number of levels")
