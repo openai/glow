@@ -21,7 +21,7 @@ Qualitative results
 
 To download and extract celeb for example, run
 ```
-curl https://storage.googleapis.com/glow-demo/data/celeba-tfr.tar
+wget https://storage.googleapis.com/glow-demo/data/celeba-tfr.tar
 tar -xvf celeb-tfr.tar
 ```
 Change `hps.data_dir` in train.py file to point to the above folder (or use the `--data_dir` flag when you run train.py)
