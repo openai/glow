@@ -33,20 +33,25 @@ _NUM_PARALLEL_MAP_CALLS = 32
 _DOWNSAMPLING = tf.image.ResizeMethod.BILINEAR
 _SHUFFLE_BUFFER = 1024
 
+
 def _int64_feature(value):
     if not isinstance(value, Iterable):
         value = [value]
     return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
 
+
 def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
 
 def error(msg):
     print('Error: ' + msg)
     exit(1)
 
+
 def x_to_uint8(x):
     return tf.cast(tf.clip_by_value(tf.floor(x), 0, 255), 'uint8')
+
 
 def centre_crop(img):
     h, w = tf.shape(img)[0], tf.shape(img)[1]
@@ -55,13 +60,16 @@ def centre_crop(img):
     w_offset = (w - min_side) // 2
     return tf.image.crop_to_bounding_box(img, h_offset, w_offset, min_side, min_side)
 
+
 def downsample(img):
     return (img[0::2, 0::2, :] + img[0::2, 1::2, :] + img[1::2, 0::2, :] + img[1::2, 1::2, :]) * 0.25
+
 
 def parse_image(max_res):
     def _process_image(img):
         img = centre_crop(img)
-        img = tf.image.resize_images(img, [max_res, max_res], method=_DOWNSAMPLING)
+        img = tf.image.resize_images(
+            img, [max_res, max_res], method=_DOWNSAMPLING)
         img = tf.cast(img, 'float32')
         resolution_log2 = int(np.log2(max_res))
         q_imgs = []
@@ -89,7 +97,8 @@ def parse_image(max_res):
 
     return _parse_image
 
-def parse_celeba_image(max_res, transpose = False):
+
+def parse_celeba_image(max_res, transpose=False):
     def _process_image(img):
         img = tf.cast(img, 'float32')
         resolution_log2 = int(np.log2(max_res))
@@ -112,12 +121,13 @@ def parse_celeba_image(max_res, transpose = False):
         data = tf.decode_raw(data, tf.uint8)
         img = tf.reshape(data, shape)
         if transpose:
-            img = tf.transpose(img, (1,2,0)) # CHW -> HWC
+            img = tf.transpose(img, (1, 2, 0))  # CHW -> HWC
         imgs = _process_image(img)
         parsed = (attr, *imgs)
         return parsed
 
     return _parse_image
+
 
 def get_tfr_files(data_dir, split, lgres):
     data_dir = os.path.join(data_dir, split)
@@ -125,12 +135,14 @@ def get_tfr_files(data_dir, split, lgres):
     tfr_files = tfr_prefix + '-r%02d-s-*-of-*.tfrecords' % (lgres)
     return tfr_files
 
+
 def get_tfr_file(data_dir, split, lgres):
     if split:
         data_dir = os.path.join(data_dir, split)
     tfr_prefix = os.path.join(data_dir, os.path.basename(data_dir))
     tfr_file = tfr_prefix + '-r%02d.tfrecords' % (lgres)
     return tfr_file
+
 
 def dump_celebahq(data_dir, tfrecord_dir, max_res, split, write):
     _NUM_IMAGES = {
@@ -150,7 +162,8 @@ def dump_celebahq(data_dir, tfrecord_dir, max_res, split, write):
         if split:
             tfr_files = get_tfr_files(data_dir, split, int(np.log2(max_res)))
             files = tf.data.Dataset.list_files(tfr_files)
-            dset = files.apply(tf.contrib.data.parallel_interleave(tf.data.TFRecordDataset, cycle_length=_NUM_PARALLEL_FILE_READERS))
+            dset = files.apply(tf.contrib.data.parallel_interleave(
+                tf.data.TFRecordDataset, cycle_length=_NUM_PARALLEL_FILE_READERS))
             transpose = False
         else:
             tfr_file = get_tfr_file(data_dir, "", int(np.log2(max_res)))
@@ -173,9 +186,11 @@ def dump_celebahq(data_dir, tfrecord_dir, max_res, split, write):
                     if write:
                         tfr.add_image(0, imgs, attr)
                 if write:
-                    assert tfr.cur_images == total_imgs, (tfr.cur_images, total_imgs)
+                    assert tfr.cur_images == total_imgs, (
+                        tfr.cur_images, total_imgs)
 
         #attr, *imgs = sess.run([_attr, *_imgs])
+
 
 def dump_imagenet(data_dir, tfrecord_dir, max_res, split, write):
     _NUM_IMAGES = {
@@ -194,9 +209,11 @@ def dump_imagenet(data_dir, tfrecord_dir, max_res, split, write):
     with tf.Session() as sess:
         is_training = (split == 'train')
         if is_training:
-            files = tf.data.Dataset.list_files(os.path.join(data_dir, 'train-*-of-01024'))
+            files = tf.data.Dataset.list_files(
+                os.path.join(data_dir, 'train-*-of-01024'))
         else:
-            files = tf.data.Dataset.list_files(os.path.join(data_dir, 'validation-*-of-00128'))
+            files = tf.data.Dataset.list_files(
+                os.path.join(data_dir, 'validation-*-of-00128'))
 
         files = files.shuffle(buffer_size=_NUM_FILES[split])
 
@@ -205,7 +222,8 @@ def dump_imagenet(data_dir, tfrecord_dir, max_res, split, write):
 
         dataset = dataset.shuffle(buffer_size=_SHUFFLE_BUFFER)
         parse_fn = parse_image(max_res)
-        dataset = dataset.map(parse_fn, num_parallel_calls=_NUM_PARALLEL_MAP_CALLS)
+        dataset = dataset.map(
+            parse_fn, num_parallel_calls=_NUM_PARALLEL_MAP_CALLS)
         dataset = dataset.prefetch(1)
         iterator = dataset.make_one_shot_iterator()
 
@@ -225,10 +243,12 @@ def dump_imagenet(data_dir, tfrecord_dir, max_res, split, write):
 
         #label, *imgs = sess.run([_label, *_imgs])
 
+
 class TFRecordExporter:
     def __init__(self, tfrecord_dir, resolution_log2, expected_images, shards, print_progress=True, progress_interval=10):
         self.tfrecord_dir = tfrecord_dir
-        self.tfr_prefix    = os.path.join(self.tfrecord_dir, os.path.basename(self.tfrecord_dir))
+        self.tfr_prefix = os.path.join(
+            self.tfrecord_dir, os.path.basename(self.tfrecord_dir))
         self.resolution_log2 = resolution_log2
         self.expected_images = expected_images
 
@@ -242,19 +262,24 @@ class TFRecordExporter:
         if not os.path.isdir(self.tfrecord_dir):
             os.makedirs(self.tfrecord_dir)
         assert (os.path.isdir(self.tfrecord_dir))
-        tfr_opt = tf.python_io.TFRecordOptions(tf.python_io.TFRecordCompressionType.NONE)
+        tfr_opt = tf.python_io.TFRecordOptions(
+            tf.python_io.TFRecordCompressionType.NONE)
         for lod in range(self.resolution_log2 - 1):
-            p_shard = np.array_split(np.random.permutation(expected_images),shards)
-            img_to_shard = np.zeros(expected_images, dtype = np.int)
+            p_shard = np.array_split(
+                np.random.permutation(expected_images), shards)
+            img_to_shard = np.zeros(expected_images, dtype=np.int)
             writers = []
             for shard in range(shards):
                 img_to_shard[p_shard[shard]] = shard
-                tfr_file = self.tfr_prefix + '-r%02d-s-%04d-of-%04d.tfrecords' % (self.resolution_log2 - lod, shard, shards)
+                tfr_file = self.tfr_prefix + \
+                    '-r%02d-s-%04d-of-%04d.tfrecords' % (
+                        self.resolution_log2 - lod, shard, shards)
                 writers.append(tf.python_io.TFRecordWriter(tfr_file, tfr_opt))
             #print(np.unique(img_to_shard, return_counts=True))
             counts = np.unique(img_to_shard, return_counts=True)[1]
             assert len(counts) == shards
-            print("Smallest and largest shards have size", np.min(counts), np.max(counts))
+            print("Smallest and largest shards have size",
+                  np.min(counts), np.max(counts))
             self.tfr_writers.append((writers, img_to_shard))
 
     def close(self):
@@ -286,7 +311,8 @@ class TFRecordExporter:
                     }
                 )
             )
-            writers[img_to_shard[self.cur_images]].write(ex.SerializeToString())
+            writers[img_to_shard[self.cur_images]].write(
+                ex.SerializeToString())
         self.cur_images += 1
 
     # def add_labels(self, labels):
@@ -302,16 +328,20 @@ class TFRecordExporter:
     def __exit__(self, *args):
         self.close()
 
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_dir", type=str, required = True)
+    parser.add_argument("--data_dir", type=str, required=True)
     parser.add_argument("--max_res", type=int, default=256, help="Image size")
-    parser.add_argument("--tfrecord_dir", type=str, required = True, help = 'place to dump')
-    parser.add_argument("--write", action = 'store_true', help = "Whether to write")
-    hps = parser.parse_args() # So error if typo
+    parser.add_argument("--tfrecord_dir", type=str,
+                        required=True, help='place to dump')
+    parser.add_argument("--write", action='store_true',
+                        help="Whether to write")
+    hps = parser.parse_args()  # So error if typo
     #dump_imagenet(hps.data_dir, hps.tfrecord_dir, hps.max_res, 'validation', hps.write)
     #dump_imagenet(hps.data_dir, hps.tfrecord_dir, hps.max_res, 'train', hps.write)
-    dump_celebahq(hps.data_dir, hps.tfrecord_dir, hps.max_res, 'validation', hps.write)
-    dump_celebahq(hps.data_dir, hps.tfrecord_dir, hps.max_res, 'train', hps.write)
-
+    dump_celebahq(hps.data_dir, hps.tfrecord_dir,
+                  hps.max_res, 'validation', hps.write)
+    dump_celebahq(hps.data_dir, hps.tfrecord_dir,
+                  hps.max_res, 'train', hps.write)

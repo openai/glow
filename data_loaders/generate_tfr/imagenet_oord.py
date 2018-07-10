@@ -33,13 +33,16 @@ from tqdm import tqdm
 
 from typing import Iterable
 
+
 def _int64_feature(value):
     if not isinstance(value, Iterable):
         value = [value]
     return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
 
+
 def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
 
 def dump(fn_root, tfrecord_dir, max_res, expected_images, shards, write):
     """Main converter function."""
@@ -57,19 +60,23 @@ def dump(fn_root, tfrecord_dir, max_res, expected_images, shards, write):
     assert num_examples == expected_images
 
     # Sharding
-    tfr_opt = tf.python_io.TFRecordOptions(tf.python_io.TFRecordCompressionType.NONE)
+    tfr_opt = tf.python_io.TFRecordOptions(
+        tf.python_io.TFRecordCompressionType.NONE)
     p_shard = np.array_split(np.random.permutation(expected_images), shards)
     img_to_shard = np.zeros(expected_images, dtype=np.int)
     writers = []
     for shard in range(shards):
         img_to_shard[p_shard[shard]] = shard
-        tfr_file = tfr_prefix + '-r%02d-s-%04d-of-%04d.tfrecords' % (resolution_log2, shard, shards)
+        tfr_file = tfr_prefix + \
+            '-r%02d-s-%04d-of-%04d.tfrecords' % (
+                resolution_log2, shard, shards)
         writers.append(tf.python_io.TFRecordWriter(tfr_file, tfr_opt))
 
     # print(np.unique(img_to_shard, return_counts=True))
     counts = np.unique(img_to_shard, return_counts=True)[1]
     assert len(counts) == shards
-    print("Smallest and largest shards have size", np.min(counts), np.max(counts))
+    print("Smallest and largest shards have size",
+          np.min(counts), np.max(counts))
 
     for example_idx, img_fn in enumerate(tqdm(img_fn_list)):
         shard = img_to_shard[example_idx]
@@ -105,8 +112,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--res", type=int, default=32, help="Image size")
-    parser.add_argument("--tfrecord_dir", type=str, required=True, help='place to dump')
-    parser.add_argument("--write", action='store_true', help="Whether to write")
+    parser.add_argument("--tfrecord_dir", type=str,
+                        required=True, help='place to dump')
+    parser.add_argument("--write", action='store_true',
+                        help="Whether to write")
     hps = parser.parse_args()
 
     # Imagenet
@@ -127,7 +136,7 @@ if __name__ == "__main__":
 
     for split in ['validation', 'train']:
         fn_root = _FILE[split]
-        tfrecord_dir =  os.path.join(hps.tfrecord_dir, split)
+        tfrecord_dir = os.path.join(hps.tfrecord_dir, split)
         total_imgs = _NUM_IMAGES[split]
         shards = _NUM_SHARDS[split]
         if not os.path.exists(tfrecord_dir):

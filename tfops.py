@@ -7,6 +7,7 @@ import horovod.tensorflow as hvd
 # Debugging function
 do_print_act_stats = True
 
+
 def print_act_stats(x, _str=""):
     if not do_print_act_stats:
         return x
@@ -17,27 +18,32 @@ def print_act_stats(x, _str=""):
     if len(x.get_shape()) == 2:
         x_mean, x_var = tf.nn.moments(x, [0], keep_dims=True)
     if len(x.get_shape()) == 4:
-        x_mean, x_var = tf.nn.moments(x, [0,1,2], keep_dims=True)
-    stats = [tf.reduce_min(x_mean), tf.reduce_mean(x_mean), tf.reduce_max(x_mean),\
-            tf.reduce_min(tf.sqrt(x_var)), tf.reduce_mean(tf.sqrt(x_var)), tf.reduce_max(tf.sqrt(x_var))]
+        x_mean, x_var = tf.nn.moments(x, [0, 1, 2], keep_dims=True)
+    stats = [tf.reduce_min(x_mean), tf.reduce_mean(x_mean), tf.reduce_max(x_mean),
+             tf.reduce_min(tf.sqrt(x_var)), tf.reduce_mean(tf.sqrt(x_var)), tf.reduce_max(tf.sqrt(x_var))]
     return tf.Print(x, stats, "["+_str+"] "+x.name)
 
 # Allreduce methods
+
 
 def allreduce_sum(x):
     if hvd.size() == 1:
         return x
     return hvd.mpi_ops._allreduce(x)
 
+
 def allreduce_mean(x):
     x = allreduce_sum(x) / hvd.size()
     return x
 
+
 def default_initial_value(shape, std=0.05):
     return tf.random_normal(shape, 0., std)
 
+
 def default_initializer(std=0.05):
     return tf.random_normal_initializer(0., std)
+
 
 def int_shape(x):
     if str(x.get_shape()[0]) != '?':
@@ -46,6 +52,8 @@ def int_shape(x):
 
 # wrapper tf.get_variable, augmented with 'init' functionality
 # Get variable with data dependent init
+
+
 @add_arg_scope
 def get_variable_ddi(name, shape, initial_value, dtype=tf.float32, init=False, trainable=True):
     w = tf.get_variable(name, shape, dtype, None, trainable=trainable)
@@ -57,16 +65,20 @@ def get_variable_ddi(name, shape, initial_value, dtype=tf.float32, init=False, t
 
 # Activation normalization
 # Convenience function that does centering+scaling
+
+
 @add_arg_scope
-def actnorm(name, x, scale=1., logdet=None, logscale_factor = 3., batch_variance=False, reverse=False, init=False, trainable=True):
+def actnorm(name, x, scale=1., logdet=None, logscale_factor=3., batch_variance=False, reverse=False, init=False, trainable=True):
     if arg_scope([get_variable_ddi], trainable=trainable):
         if not reverse:
             x = actnorm_center(name+"_center", x, reverse)
-            x = actnorm_scale(name+"_scale", x, scale, logdet, logscale_factor, batch_variance, reverse, init)
+            x = actnorm_scale(name+"_scale", x, scale, logdet,
+                              logscale_factor, batch_variance, reverse, init)
             if logdet != None:
                 x, logdet = x
         else:
-            x = actnorm_scale(name + "_scale", x, scale, logdet, logscale_factor, batch_variance, reverse, init)
+            x = actnorm_scale(name + "_scale", x, scale, logdet,
+                              logscale_factor, batch_variance, reverse, init)
             if logdet != None:
                 x, logdet = x
             x = actnorm_center(name+"_center", x, reverse)
@@ -75,6 +87,8 @@ def actnorm(name, x, scale=1., logdet=None, logscale_factor = 3., batch_variance
         return x
 
 # Activation normalization
+
+
 @add_arg_scope
 def actnorm_center(name, x, reverse=False):
     shape = x.get_shape()
@@ -82,10 +96,12 @@ def actnorm_center(name, x, reverse=False):
         assert len(shape) == 2 or len(shape) == 4
         if len(shape) == 2:
             x_mean = tf.reduce_mean(x, [0], keepdims=True)
-            b = get_variable_ddi("b", (1, int_shape(x)[1]), initial_value=-x_mean)
+            b = get_variable_ddi(
+                "b", (1, int_shape(x)[1]), initial_value=-x_mean)
         elif len(shape) == 4:
-            x_mean = tf.reduce_mean(x, [0,1,2], keepdims=True)
-            b = get_variable_ddi("b", (1, 1, 1, int_shape(x)[3]), initial_value=-x_mean)
+            x_mean = tf.reduce_mean(x, [0, 1, 2], keepdims=True)
+            b = get_variable_ddi(
+                "b", (1, 1, 1, int_shape(x)[3]), initial_value=-x_mean)
 
         if not reverse:
             x += b
@@ -95,8 +111,10 @@ def actnorm_center(name, x, reverse=False):
         return x
 
 # Activation normalization
+
+
 @add_arg_scope
-def actnorm_scale(name, x, scale=1., logdet=None, logscale_factor = 3., batch_variance=False, reverse=False, init=False, trainable=True):
+def actnorm_scale(name, x, scale=1., logdet=None, logscale_factor=3., batch_variance=False, reverse=False, init=False, trainable=True):
     shape = x.get_shape()
     with tf.variable_scope(name), arg_scope([get_variable_ddi], trainable=trainable):
         assert len(shape) == 2 or len(shape) == 4
@@ -106,7 +124,7 @@ def actnorm_scale(name, x, scale=1., logdet=None, logscale_factor = 3., batch_va
             _shape = (1, int_shape(x)[1])
 
         elif len(shape) == 4:
-            x_var = tf.reduce_mean(x**2, [0,1,2], keepdims=True)
+            x_var = tf.reduce_mean(x**2, [0, 1, 2], keepdims=True)
             logdet_factor = int(shape[1])*int(shape[2])
             _shape = (1, 1, 1, int_shape(x)[3])
 
@@ -120,14 +138,16 @@ def actnorm_scale(name, x, scale=1., logdet=None, logscale_factor = 3., batch_va
             # (it's not optimized away?)
 
         if True:
-            logs = get_variable_ddi("logs", _shape, initial_value=tf.log(scale/(tf.sqrt(x_var)+1e-6))/logscale_factor)*logscale_factor
+            logs = get_variable_ddi("logs", _shape, initial_value=tf.log(
+                scale/(tf.sqrt(x_var)+1e-6))/logscale_factor)*logscale_factor
             if not reverse:
                 x = x * tf.exp(logs)
             else:
                 x = x * tf.exp(-logs)
         else:
             # Alternative, doesn't seem to do significantly worse or better than the logarithmic version above
-            s = get_variable_ddi("s", _shape, initial_value = scale / (tf.sqrt(x_var) + 1e-6) /logscale_factor)*logscale_factor
+            s = get_variable_ddi("s", _shape, initial_value=scale /
+                                 (tf.sqrt(x_var) + 1e-6) / logscale_factor)*logscale_factor
             logs = tf.log(tf.abs(s))
             if not reverse:
                 x *= s
@@ -143,41 +163,52 @@ def actnorm_scale(name, x, scale=1., logdet=None, logscale_factor = 3., batch_va
         return x
 
 # Linear layer with layer norm
+
+
 @add_arg_scope
 def linear(name, x, width, do_weightnorm=True, do_actnorm=True, initializer=None, scale=1.):
     initializer = initializer or default_initializer()
     with tf.variable_scope(name):
         n_in = int(x.get_shape()[1])
-        w = tf.get_variable("W", [n_in, width], tf.float32, initializer=initializer)
+        w = tf.get_variable("W", [n_in, width],
+                            tf.float32, initializer=initializer)
         if do_weightnorm:
             w = tf.nn.l2_normalize(w, [0])
         x = tf.matmul(x, w)
-        x += tf.get_variable("b", [1, width], initializer=tf.zeros_initializer())
+        x += tf.get_variable("b", [1, width],
+                             initializer=tf.zeros_initializer())
         if do_actnorm:
             x = actnorm("actnorm", x, scale)
         return x
 
 # Linear layer with zero init
+
+
 @add_arg_scope
 def linear_zeros(name, x, width, logscale_factor=3):
     with tf.variable_scope(name):
         n_in = int(x.get_shape()[1])
-        w = tf.get_variable("W", [n_in, width], tf.float32, initializer=tf.zeros_initializer())
+        w = tf.get_variable("W", [n_in, width], tf.float32,
+                            initializer=tf.zeros_initializer())
         x = tf.matmul(x, w)
-        x += tf.get_variable("b", [1, width], initializer=tf.zeros_initializer())
-        x *= tf.exp(tf.get_variable("logs", [1, width], initializer=tf.zeros_initializer()) * logscale_factor)
+        x += tf.get_variable("b", [1, width],
+                             initializer=tf.zeros_initializer())
+        x *= tf.exp(tf.get_variable("logs",
+                                    [1, width], initializer=tf.zeros_initializer()) * logscale_factor)
         return x
 
 # Slow way to add edge padding
+
+
 def add_edge_padding(x, filter_size):
     assert filter_size[0] % 2 == 1
     if filter_size[0] == 1 and filter_size[1] == 1:
         return x
-    a = (filter_size[0] - 1) // 2 # vertical padding size
-    b = (filter_size[1] - 1) // 2 # horizontal padding size
+    a = (filter_size[0] - 1) // 2  # vertical padding size
+    b = (filter_size[1] - 1) // 2  # horizontal padding size
     if True:
         x = tf.pad(x, [[0, 0], [a, a], [b, b], [0, 0]])
-        name = "_".join([str(dim) for dim in [a,b,*int_shape(x)[1:3]]])
+        name = "_".join([str(dim) for dim in [a, b, *int_shape(x)[1:3]]])
         pads = tf.get_collection(name)
         if not pads:
             if hvd.rank() == 0:
@@ -194,13 +225,15 @@ def add_edge_padding(x, filter_size):
         pad = tf.tile(pad, [tf.shape(x)[0], 1, 1, 1])
         x = tf.concat([x, pad], axis=3)
     else:
-        pad = tf.pad(tf.zeros_like(x[:,:,:,:1]) - 1, [[0,0], [a,a], [b,b], [0,0]]) + 1
+        pad = tf.pad(tf.zeros_like(x[:, :, :, :1]) - 1,
+                     [[0, 0], [a, a], [b, b], [0, 0]]) + 1
         x = tf.pad(x, [[0, 0], [a, a], [b, b], [0, 0]])
         x = tf.concat([x, pad], axis=3)
     return x
 
+
 @add_arg_scope
-def conv2d(name, x, width, filter_size=[3,3], stride=[1,1], pad="SAME", do_weightnorm=False, do_actnorm=True, context1d=None, skip=1, edge_bias=True):
+def conv2d(name, x, width, filter_size=[3, 3], stride=[1, 1], pad="SAME", do_weightnorm=False, do_actnorm=True, context1d=None, skip=1, edge_bias=True):
     with tf.variable_scope(name):
         if edge_bias and pad == "SAME":
             x = add_edge_padding(x, filter_size)
@@ -210,21 +243,24 @@ def conv2d(name, x, width, filter_size=[3,3], stride=[1,1], pad="SAME", do_weigh
 
         stride_shape = [1] + stride + [1]
         filter_shape = filter_size + [n_in, width]
-        w = tf.get_variable("W", filter_shape, tf.float32, initializer=default_initializer())
+        w = tf.get_variable("W", filter_shape, tf.float32,
+                            initializer=default_initializer())
         if do_weightnorm:
-            w = tf.nn.l2_normalize(w, [0,1,2])
+            w = tf.nn.l2_normalize(w, [0, 1, 2])
         if skip == 1:
             x = tf.nn.conv2d(x, w, stride_shape, pad, data_format='NHWC')
         else:
-            assert stride[0]==1 and stride[1]==1
+            assert stride[0] == 1 and stride[1] == 1
             x = tf.nn.atrous_conv2d(x, w, skip, pad)
         if do_actnorm:
             x = actnorm("actnorm", x)
         else:
-            x += tf.get_variable("b", [1, 1, 1, width], initializer=tf.zeros_initializer())
+            x += tf.get_variable("b", [1, 1, 1, width],
+                                 initializer=tf.zeros_initializer())
 
         if context1d != None:
-            x += tf.reshape(linear("context", context1d, width), [-1, 1, 1, width])
+            x += tf.reshape(linear("context", context1d,
+                                   width), [-1, 1, 1, width])
     return x
 
 
@@ -232,19 +268,23 @@ def conv2d(name, x, width, filter_size=[3,3], stride=[1,1], pad="SAME", do_weigh
 def separable_conv2d(name, x, width, filter_size=[3, 3], stride=[1, 1], padding="SAME", do_actnorm=True, std=0.05):
     n_in = int(x.get_shape()[3])
     with tf.variable_scope(name):
-        assert filter_size[0]%2 == 1 and filter_size[1]%2 == 1
+        assert filter_size[0] % 2 == 1 and filter_size[1] % 2 == 1
         strides = [1] + stride + [1]
         w1_shape = filter_size + [n_in, 1]
         w1_init = np.zeros(w1_shape, dtype='float32')
-        w1_init[(filter_size[0]-1)//2, (filter_size[1]-1)//2, :, :] = 1. #initialize depthwise conv as identity
+        w1_init[(filter_size[0]-1)//2, (filter_size[1]-1)//2, :,
+                :] = 1.  # initialize depthwise conv as identity
         w1 = tf.get_variable("W1", dtype=tf.float32, initializer=w1_init)
         w2_shape = [1, 1, n_in, width]
-        w2 = tf.get_variable("W2", w2_shape, tf.float32, initializer=default_initializer(std))
-        x = tf.nn.separable_conv2d(x, w1, w2, strides, padding, data_format='NHWC')
+        w2 = tf.get_variable("W2", w2_shape, tf.float32,
+                             initializer=default_initializer(std))
+        x = tf.nn.separable_conv2d(
+            x, w1, w2, strides, padding, data_format='NHWC')
         if do_actnorm:
             x = actnorm("actnorm", x)
         else:
-            x += tf.get_variable("b", [1, 1, 1, width], initializer=tf.zeros_initializer(std))
+            x += tf.get_variable("b", [1, 1, 1, width],
+                                 initializer=tf.zeros_initializer(std))
 
     return x
 
@@ -259,14 +299,17 @@ def conv2d_zeros(name, x, width, filter_size=[3, 3], stride=[1, 1], pad="SAME", 
         n_in = int(x.get_shape()[3])
         stride_shape = [1] + stride + [1]
         filter_shape = filter_size + [n_in, width]
-        w = tf.get_variable("W", filter_shape, tf.float32, initializer=tf.zeros_initializer())
+        w = tf.get_variable("W", filter_shape, tf.float32,
+                            initializer=tf.zeros_initializer())
         if skip == 1:
             x = tf.nn.conv2d(x, w, stride_shape, pad, data_format='NHWC')
         else:
-            assert stride[0]==1 and stride[1]==1
+            assert stride[0] == 1 and stride[1] == 1
             x = tf.nn.atrous_conv2d(x, w, skip, pad)
-        x += tf.get_variable("b", [1, 1, 1, width], initializer=tf.zeros_initializer())
-        x *= tf.exp(tf.get_variable("logs", [1, width], initializer=tf.zeros_initializer()) * logscale_factor)
+        x += tf.get_variable("b", [1, 1, 1, width],
+                             initializer=tf.zeros_initializer())
+        x *= tf.exp(tf.get_variable("logs",
+                                    [1, width], initializer=tf.zeros_initializer()) * logscale_factor)
     return x
 
 
@@ -283,48 +326,62 @@ def upsample2d_nearest_neighbour(x):
     x = tf.reshape(x, (n_batch, height*2, width*2, n_channels))
     return x
 
-def upsample(x, factor = 2):
+
+def upsample(x, factor=2):
     shape = x.get_shape()
     height = int(shape[1])
     width = int(shape[2])
     x = tf.image.resize_nearest_neighbor(x, [height * factor, width * factor])
     return x
 
+
 def squeeze2d(x, factor=2):
     assert factor >= 1
-    if factor == 1: return x
+    if factor == 1:
+        return x
     shape = x.get_shape()
     height = int(shape[1])
     width = int(shape[2])
     n_channels = int(shape[3])
     assert height % factor == 0 and width % factor == 0
-    x = tf.reshape(x, [-1, height//factor, factor, width//factor, factor, n_channels])
+    x = tf.reshape(x, [-1, height//factor, factor,
+                       width//factor, factor, n_channels])
     x = tf.transpose(x, [0, 1, 3, 5, 2, 4])
-    x = tf.reshape(x, [-1, height//factor, width//factor, n_channels*factor*factor])
+    x = tf.reshape(x, [-1, height//factor, width //
+                       factor, n_channels*factor*factor])
     return x
+
 
 def unsqueeze2d(x, factor=2):
     assert factor >= 1
-    if factor == 1: return x
+    if factor == 1:
+        return x
     shape = x.get_shape()
     height = int(shape[1])
     width = int(shape[2])
     n_channels = int(shape[3])
-    assert n_channels >= 4 and n_channels%4 == 0
-    x = tf.reshape(x, (-1, height, width, int(n_channels/factor**2), factor, factor))
+    assert n_channels >= 4 and n_channels % 4 == 0
+    x = tf.reshape(
+        x, (-1, height, width, int(n_channels/factor**2), factor, factor))
     x = tf.transpose(x, [0, 1, 4, 2, 5, 3])
-    x = tf.reshape(x, (-1, int(height*factor), int(width*factor), int(n_channels/factor**2)))
+    x = tf.reshape(x, (-1, int(height*factor),
+                       int(width*factor), int(n_channels/factor**2)))
     return x
 
 # Reverse features across channel dimension
+
+
 def reverse_features(name, h, reverse=False):
     return h[:, :, :, ::-1]
 
 # Shuffle across the channel dimension
+
+
 def shuffle_features(name, h, indices=None, return_indices=False, reverse=False):
     with tf.variable_scope(name):
 
-        rng = np.random.RandomState((abs(hash(tf.get_variable_scope().name))) % 10000000)
+        rng = np.random.RandomState(
+            (abs(hash(tf.get_variable_scope().name))) % 10000000)
 
         if indices == None:
             # Create numpy and tensorflow variables with indices
@@ -336,8 +393,10 @@ def shuffle_features(name, h, indices=None, return_indices=False, reverse=False)
             for i in range(n_channels):
                 indices_inverse[indices[i]] = i
 
-        tf_indices = tf.get_variable("indices", dtype=tf.int32, initializer=np.asarray(indices, dtype='int32'), trainable=False)
-        tf_indices_reverse = tf.get_variable("indices_inverse", dtype=tf.int32, initializer=np.asarray(indices_inverse, dtype='int32'), trainable=False)
+        tf_indices = tf.get_variable("indices", dtype=tf.int32, initializer=np.asarray(
+            indices, dtype='int32'), trainable=False)
+        tf_indices_reverse = tf.get_variable("indices_inverse", dtype=tf.int32, initializer=np.asarray(
+            indices_inverse, dtype='int32'), trainable=False)
 
         _indices = tf_indices
         if reverse:
@@ -350,20 +409,23 @@ def shuffle_features(name, h, indices=None, return_indices=False, reverse=False)
             h = tf.transpose(h)
         elif len(h.get_shape()) == 4:
             # Slice
-            h = tf.transpose(h, [3,1,2,0])
+            h = tf.transpose(h, [3, 1, 2, 0])
             h = tf.gather(h, _indices)
-            h = tf.transpose(h, [3,1,2,0])
+            h = tf.transpose(h, [3, 1, 2, 0])
         if return_indices:
             return h, indices
         return h
-    
+
+
 def embedding(name, y, n_y, width):
     with tf.variable_scope(name):
-        params = tf.get_variable("embedding", [n_y, width], initializer=default_initializer())
+        params = tf.get_variable(
+            "embedding", [n_y, width], initializer=default_initializer())
         embeddings = tf.gather(params, y)
         return embeddings
 
 # Random variables
+
 
 def flatten_sum(logps):
     if len(logps.get_shape()) == 2:
@@ -373,17 +435,21 @@ def flatten_sum(logps):
     else:
         raise Exception()
 
+
 def standard_gaussian(shape):
     return gaussian_diag(tf.zeros(shape), tf.zeros(shape))
 
+
 def gaussian_diag(mean, logsd):
-    class o(object): pass
+    class o(object):
+        pass
     o.mean = mean
     o.logsd = logsd
     o.eps = tf.random_normal(tf.shape(mean))
     o.sample = mean + tf.exp(logsd) * o.eps
     o.sample2 = lambda eps: mean + tf.exp(logsd) * eps
-    o.logps = lambda x: -0.5 * (np.log(2 * np.pi) + 2. * logsd + (x - mean) ** 2 / tf.exp(2. * logsd))
+    o.logps = lambda x: -0.5 * \
+        (np.log(2 * np.pi) + 2. * logsd + (x - mean) ** 2 / tf.exp(2. * logsd))
     o.logp = lambda x: flatten_sum(o.logps(x))
     o.get_eps = lambda x: (x - mean) / tf.exp(logsd)
     return o
@@ -396,18 +462,18 @@ def gaussian_diag(mean, logsd):
 #    return tf.reduce_sum(logp, [1, 2, 3])
 
 def discretized_logistic(mean, logscale, binsize=1. / 256):
-    class o(object): pass
+    class o(object):
+        pass
     o.mean = mean
     o.logscale = logscale
     scale = tf.exp(logscale)
+
     def logps(x):
         x = (x - mean) / scale
         return tf.log(tf.sigmoid(x + binsize / scale) - tf.sigmoid(x) + 1e-7)
     o.logps = logps
     o.logp = lambda x: flatten_sum(logps(x))
     return o
-
-
 
 
 def _symmetric_matrix_square_root(mat, eps=1e-10):
