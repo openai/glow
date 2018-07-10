@@ -7,6 +7,8 @@ import horovod.tensorflow as hvd
 '''
 Polyak averaging op
 '''
+
+
 def polyak(params, beta):
     #params = tf.trainable_variables()
     ema = tf.train.ExponentialMovingAverage(decay=beta, zero_debias=True)
@@ -28,18 +30,19 @@ def polyak(params, beta):
 
 def adam(params, cost_or_grads, alpha=3e-4, hps=None, epsilon=1e-8):
     updates = []
-    if type(cost_or_grads) is not list:
+    if not isinstance(cost_or_grads, list):
         gs = tf.gradients(cost_or_grads, params)
     else:
         gs = cost_or_grads
 
-    beta2 = 1-1./(hps.train_its*hps.polyak_epochs)
+    beta2 = 1 - 1. / (hps.train_its * hps.polyak_epochs)
 
     # all-reduce
     grads = [Z.allreduce_mean(g) for g in gs]
 
     t = tf.Variable(1., 'adam_t')
-    alpha_t = alpha * tf.sqrt((1. - tf.pow(beta2, t))) / (1. - tf.pow(hps.beta1, t))
+    alpha_t = alpha * tf.sqrt((1. - tf.pow(beta2, t))) / \
+        (1. - tf.pow(hps.beta1, t))
     updates.append(t.assign_add(1))
 
     for w, g in zip(params, grads):
@@ -61,26 +64,30 @@ def adam(params, cost_or_grads, alpha=3e-4, hps=None, epsilon=1e-8):
     train_op = tf.group(polyak_avg_op, *updates)
     return train_op, polyak_swap_op, ema
 
+
 '''
 Adam optimizer
 Version whose learning rate could, in theory, be scaled linearly (like SGD+momentum).
 (It doesn't seem to work yet, though.)
 '''
+
+
 def adam2(params, cost_or_grads, alpha=3e-4, hps=None, epsilon=1e-8):
     updates = []
-    if type(cost_or_grads) is not list:
+    if not isinstance(cost_or_grads, list):
         gs = tf.gradients(cost_or_grads, params)
     else:
         gs = cost_or_grads
 
-    beta2 = 1-1./(hps.train_its*hps.polyak_epochs)
+    beta2 = 1 - 1. / (hps.train_its * hps.polyak_epochs)
 
     # all-reduce
     grads1 = [Z.allreduce_mean(g) for g in gs]
     grads2 = [Z.allreduce_mean(g**2) for g in gs]
 
     t = tf.Variable(1., 'adam_t')
-    alpha_t = alpha * tf.sqrt((1. - tf.pow(beta2, t))) / (1. - tf.pow(hps.beta1, t))
+    alpha_t = alpha * tf.sqrt((1. - tf.pow(beta2, t))) / \
+        (1. - tf.pow(hps.beta1, t))
     updates.append(t.assign_add(1))
 
     for w, g1, g2 in zip(params, grads1, grads2):
@@ -102,14 +109,23 @@ def adam2(params, cost_or_grads, alpha=3e-4, hps=None, epsilon=1e-8):
     train_op = tf.group(polyak_avg_op, *updates)
     return train_op, polyak_swap_op, ema
 
+
 '''
 Adam optimizer
 Version whose learning rate could, in theory, be scaled linearly (like SGD+momentum).
 It doesn't seem to work though.
 '''
-def adam2_old(params, cost_or_grads, lr=3e-4, mom1=0.9, mom2=0.999, epsilon=1e-8):
+
+
+def adam2_old(
+        params,
+        cost_or_grads,
+        lr=3e-4,
+        mom1=0.9,
+        mom2=0.999,
+        epsilon=1e-8):
     updates = []
-    if type(cost_or_grads) is not list:
+    if not isinstance(cost_or_grads, list):
         gs = tf.gradients(cost_or_grads, params)
     else:
         gs = cost_or_grads
@@ -138,20 +154,22 @@ def adam2_old(params, cost_or_grads, lr=3e-4, mom1=0.9, mom2=0.999, epsilon=1e-8
         updates.append(p.assign(p_t))
     return tf.group(*updates)
 
+
 def adamax(params, cost_or_grads, alpha=3e-4, hps=None, epsilon=1e-8):
     updates = []
-    if type(cost_or_grads) is not list:
+    if not isinstance(cost_or_grads, list):
         gs = tf.gradients(cost_or_grads, params)
     else:
         gs = cost_or_grads
 
-    beta2 = 1-1./(hps.train_its*hps.polyak_epochs)
+    beta2 = 1 - 1. / (hps.train_its * hps.polyak_epochs)
 
     # all-reduce
     grads = [Z.allreduce_mean(g) for g in gs]
 
     t = tf.Variable(1., 'adam_t')
-    alpha_t = alpha * tf.sqrt((1. - tf.pow(beta2, t))) / (1. - tf.pow(hps.beta1, t))
+    alpha_t = alpha * tf.sqrt((1. - tf.pow(beta2, t))) / \
+        (1. - tf.pow(hps.beta1, t))
     updates.append(t.assign_add(1))
 
     for w, g in zip(params, grads):
@@ -174,21 +192,21 @@ def adamax(params, cost_or_grads, alpha=3e-4, hps=None, epsilon=1e-8):
     return train_op, polyak_swap_op, ema
 
 
-
 def adam(params, cost_or_grads, alpha=3e-4, hps=None, epsilon=1e-8):
     updates = []
-    if type(cost_or_grads) is not list:
+    if not isinstance(cost_or_grads, list):
         gs = tf.gradients(cost_or_grads, params)
     else:
         gs = cost_or_grads
 
-    beta2 = 1-1./(hps.train_its*hps.polyak_epochs)
+    beta2 = 1 - 1. / (hps.train_its * hps.polyak_epochs)
 
     # all-reduce
     grads = [Z.allreduce_mean(g) for g in gs]
 
     t = tf.Variable(1., 'adam_t')
-    alpha_t = alpha * tf.sqrt((1. - tf.pow(beta2, t))) / (1. - tf.pow(hps.beta1, t))
+    alpha_t = alpha * tf.sqrt((1. - tf.pow(beta2, t))) / \
+        (1. - tf.pow(hps.beta1, t))
     updates.append(t.assign_add(1))
 
     for w, g in zip(params, grads):
