@@ -5,7 +5,14 @@ Code for reproducing results in ["Glow: Generative Flow with Invertible 1x1 Conv
 ## Requirements
 
  - Tensorflow (tested with v1.8.0)
- - Horovod (tested with v0.13.4) and (Open)MPI
+ - Horovod (tested with v0.13.8) and (Open)MPI
+
+Run
+```
+pip install -r requirements.txt
+```
+
+To setup (Open)MPI, check instructions on Horovod github [page](https://github.com/uber/horovod).
 
 ## Download datasets
 The datasets are in the Google Cloud locations `https://storage.googleapis.com/glow-demo/data/{dataset_name}-tfr.tar`. The dataset_names are below, we mention the exact preprocessing / downsampling method for a correct comparison of likelihood.
@@ -25,6 +32,13 @@ wget https://storage.googleapis.com/glow-demo/data/celeba-tfr.tar
 tar -xvf celeb-tfr.tar
 ```
 Change `hps.data_dir` in train.py file to point to the above folder (or use the `--data_dir` flag when you run train.py)
+
+## Simple Train with 1 GPU
+
+Run wtih small depth to test
+```
+CUDA_VISIBLE_DEVICES=0 python train.py --depth 1
+```
 
 ## Train with multiple GPUs using MPI and Horovod
 
