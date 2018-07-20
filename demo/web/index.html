@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <!-- Mock -->
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  <title>Glow: Better Reversible Generative Models</title>
+
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link href="https://fonts.googleapis.com/css?family=Lato:400,400i,700"
+    rel="stylesheet"> 
+  <link href="mock.css" rel="stylesheet">
+
+  <!-- GlowDemo Assets -->
+  <!-- dependency: jQuery -->
+  <script
+    src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js">
+    </script>
+  <!-- dependency: JavaScript-Load-Image -->
+  <script src="load-image.all.min.js"></script>
+  <!-- dependency: html2canvas -->
+  <script src="html2canvas.min.js"></script>
+  <!-- dependency: canvas2image -->
+  <script src="canvas2image.js"></script>
+  <!-- GlowDemo assets  -->
+  <link href="glowDemo.css" rel="stylesheet">
+  <script src="glowDemo.js"></script>
+  <!-- End GlowDemo Assets -->
+
+</head>
+<body>
+  <div class="TitlePanel">
+    <div class="Title">
+      <h1>Glow: Better Reversible Generative Models</h1>
+      <time>June 30, 2018</time>
+    </div>
+  </div>
+  <div class="Content">
+    <p class="MockUpNotice">
+      This mock-up mimics the look of the in-progress article to inform a design
+      that embeds the demo into the article. The relevant assets just need to be
+      migrated into the final article.
+    </p>
+
+    <p>We’ve developed Glow, a new type of generative model which uses
+      invertible 1x1 convolutions to create rich, synthetic models of data,
+      automatically discovering features we can manipulate. The model extends
+      previous work on reversible generative models, simplifying the
+      architecture and leading to substantially better results. We’re releasing
+      code for the model and an online visualization tool so people can explore
+      and build on these results.</p>
+
+    <a>Read Paper</a><br>
+    <a>View Code</a>
+
+    <!-- Begin Glow Demo -->
+
+    <div class="GlowDemo_Container">
+    </div>
+
+    <!-- End Glow Demo -->
+
+    <h1>Motivation</h1>
+    <p>Generative modeling is about observing data, like a set of pictures of
+      faces, then learning a model of how this data was generated. Learning to
+      approximate the data-generating process requires learning all structure
+      present in the data, and successful models should be able to synthesize
+      outputs that look similar to the data. Accurate generative models have
+      broad applications, including speech synthesis, text analysis and
+      synthesis, semi-supervised learning and model-based control. The technique
+      we propose can be applied to those problems as well.</p>
+  </div>
+</body>
+</html>

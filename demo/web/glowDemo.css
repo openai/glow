@@ -1,0 +1,492 @@
+/* glowDemo.css
+ *
+ * CSS driving the Glow paper face-mixing demo.
+ */
+
+ /* Tabs */
+
+.GlowDemo_TabLabelContainer {
+  display: table;
+  margin: auto;
+}
+
+.GlowDemo_TabLabel {
+  cursor: pointer;
+  display: table-cell;
+  padding: 10px;
+  background-color: #fff;
+  border-radius: 5px 5px 5px 5px;
+  border: 1px solid #4bacff;
+  color: #0b8dff;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  min-width: 90px;
+  text-align: center;
+}
+
+.GlowDemo_TabLabel:hover {
+  background-color: #c3e3ff;
+}
+
+.GlowDemo_TabLabel:active, .GlowDemo_ActiveTab {
+  color: #fff;
+  background-color: #4bacff;
+}
+
+.GlowDemo_TabLabel:hover.GlowDemo_ActiveTab {
+  background-color: #6dbbff;
+}
+
+ /* Demo Container */
+
+.GlowDemo {
+  box-sizing: initial;
+  font-size: initial;
+  line-height: initial;
+}
+
+.GlowDemo img {
+  display: initial;
+  padding: initial;
+  position: absolute;
+  left: initial;
+  transform: initial;
+}
+
+.GlowDemo_Container {
+  margin-top: 1em;
+  margin-left: auto;
+  margin-right: auto;
+  width: 375px;
+  transform: translateX(-16px);
+}
+
+/* Face Sliders Demo */
+
+.GlowDemo_FaceSlidersDemo {
+  /* width: 404px; */
+  overflow: hidden;
+  display: table;
+  margin: 1em auto 3em;
+}
+
+/* Face Slider Mode */
+
+.GlowDemo_SelectorAndOutput {
+  display: table;
+}
+
+/* Image Selector (Input) */
+
+.GlowDemo_InputLabel {
+  display: block;
+  text-transform: uppercase;
+  margin: auto;
+  color: #747c9f;
+  font-size: 0.8em;
+  padding-left: 5px;
+}
+
+.GlowDemo_SelectorFrame {
+  display: table-cell;
+  padding-right: 5px;
+}
+
+.GlowDemo_ImageSelectorNoFaceFoundOverlay {
+	position: absolute;
+	z-index: 7;
+	margin-left: -16px;
+	margin-top: -154px;
+	width: 14em;
+	background-color: #fbb4d7;
+	border-radius: 4px;
+	padding: 0.5em;
+	box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.205);
+}
+
+.GlowDemo_ImageChoice {
+  cursor: pointer;
+  width: 59px;
+  height: 59px;
+  position: absolute;
+}
+
+/* Input & Output Images */
+
+.GlowDemo_ImageFrame {
+  width: 178px;
+  height: 178px;
+  margin: auto;
+
+  padding: 2px;
+  box-shadow: 0px 3px 6px #ddd;
+
+  background-color: #f9f9f9;
+}
+
+/* Output Images */
+
+.GlowDemo_OutputImage {
+  width: 178px !important;
+  height: 178px !important;
+}
+
+.GlowDemo_OutputImageFrame {
+  /* background-color: #d1d1d1 */
+}
+
+.GlowDemo_OutputLabel {
+  display: block;
+  text-transform: uppercase;
+  margin: auto;
+  color: #747c9f;
+  font-size: 0.8em;
+  text-align: right;
+  padding-right: 5px;
+}
+
+.GlowDemo_OutputHider {
+  z-index: 2;
+  color: #fff;
+  background-color: white;
+  width: 187px;
+  height: 210px;
+  position: absolute;
+  margin-top: -200px;
+  margin-left: -5px;
+}
+
+.GlowDemo_MixingOutputFrame .GlowDemo_OutputHider {
+  width: 248px;
+}
+
+.GlowDemo_FadeButton {
+	width: 35px !important;
+	height: 35px !important;
+	position: absolute;
+	border-radius: 4px;
+	padding: 5px !important;
+  box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.48);
+  z-index: 5;
+}
+
+.GlowDemo_DownloadButton {
+  cursor: pointer;
+	margin-left: 128px;
+	margin-top: 129px;
+	background-color: #ffffffe6;
+}
+
+.GlowDemo_DownloadButton:hover {
+	margin-left: 127px;
+	margin-top: 128px;
+	padding: 6px !important;
+	background-color: #ffffff;
+}
+
+.GlowDemo_DownloadButton:active {
+	margin-left: 130px;
+	margin-top: 131px;
+	padding: 3px !important;
+	background-color: #ffffff;
+}
+
+.GlowDemo_UserImageEditButton {
+  cursor: pointer;
+	margin-left: 128px;
+	margin-top: 129px;
+	background-color: #ffffffe6;
+}
+
+.GlowDemo_UserImageEditButton:hover {
+	margin-left: 127px;
+	margin-top: 128px;
+	padding: 6px !important;
+	background-color: #ffffff;
+}
+
+.GlowDemo_UserImageEditButton:active {
+	margin-left: 130px;
+	margin-top: 131px;
+	padding: 3px !important;
+	background-color: #ffffff;
+}
+
+/* Feature Sliders */
+
+.GlowDemo_SliderFrame {
+  width: 160px;
+  margin: auto;
+  display: table;
+  padding-top: 2.7em;
+}
+
+.GlowDemo_MixingSliderFrame {
+  padding-top: 0.8em;
+}
+
+.GlowDemo_FaceSliderContainer {
+  /* display: table-row; */
+}
+
+.GlowDemo_FaceSliderLabel {
+  display: table-cell;
+  vertical-align: middle;
+}
+
+.GlowDemo_FaceSliderLabel p {
+  margin: 0.5em 0.5em;
+  min-width: 8em;
+  font-size: 1.1em;
+  line-height: 1.1em;
+}
+
+.GlowDemo_FaceSlider {
+  /* display: inline-block; */
+  /* margin: 10px 0 0px 0 !important; */
+  width: 190px !important;
+  vertical-align: middle;
+  display: table-cell;
+}
+
+.GlowDemo_SliderHider {
+  position: absolute;
+  height: 43px;
+  width: 365px;
+  color: #fff;
+  background-color: #ffffff;
+  /* margin-top: -30px; */
+  margin-left: -365px;
+}
+
+/* Face Mixing Demo */
+
+.GlowDemo_FaceMixingDemo {
+  /* width: 404px; */
+  overflow: hidden;
+  display: table;
+  margin: 1em auto 3em;
+}
+
+.GlowDemo_LeftInputLabel {
+  display: block;
+  text-transform: uppercase;
+  margin: auto;
+  color: #747c9f;
+  font-size: 0.8em;
+  padding-left: 5px;
+}
+
+.GlowDemo_RightInputLabel {
+  display: block;
+  text-transform: uppercase;
+  margin: auto;
+  color: #747c9f;
+  font-size: 0.8em;
+  text-align: right;
+  padding-right: 5px;
+}
+
+.GlowDemo_MixingInputImagesContainer {
+  display: table;
+}
+
+.GlowDemo_MixingSelectorFrame {
+  display: table-cell;
+}
+
+.GlowDemo_MixingSelectorFrameLeft {
+  padding-right: 5px;
+}
+
+.GlowDemo_MixingSelectorFrameRight {
+  /* display: table-cell; */
+}
+
+.GlowDemo_OutputAndMixingSliderContainer {
+  display: table;
+  margin: auto;
+}
+
+.GlowDemo_MixingOutputFrame {
+	margin-top: 15px;
+}
+
+.GlowDemo_MixingOutputLabel {
+  display: block;
+  text-transform: uppercase;
+  margin: auto;
+  color: #747c9f;
+  font-size: 0.8em;
+  text-align: center;
+}
+
+.GlowDemo_MixingSliderLabel {
+  display: table;
+  text-transform: uppercase;
+  margin: auto;
+  color: #747c9f;
+  font-size: 0.8em;
+  text-align: center;
+}
+
+.GlowDemo_MixingSlider {
+  display: table;
+}
+
+.GlowDemo_MixingSliderHider {
+  margin-top: -69px;
+  height: 60px;
+}
+
+/* Loading Visuals */
+
+.GlowDemo_LoadingVisual {
+  position: absolute;
+  display: block;
+  z-index: 5;
+  width: 60px;
+  height: 60px;
+  margin-top: 59px;
+  margin-left: 60px;
+}
+
+/* Hints */
+
+.GlowDemo_Hint {
+  position: absolute;
+  z-index: 4;
+  font-size: 1em;
+  line-height: 1.2em;
+	background-color: #ffffffe6;
+	border-radius: 4px;
+	padding: 0.1em 0.4em;
+	color: #818181;
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+	/* box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.07); */
+}
+
+.GlowDemo_SelectorHint {
+	max-width: 220px;
+	margin-left: -173px;
+	margin-top: 7px;
+}
+
+.GlowDemo_DownloadHint {
+	max-width: 220px;
+	margin-left: 23px;
+	margin-top: 7px;
+	background-color: #ffffffe6;
+	border-radius: 4px;
+	padding: 0.1em 0.4em;
+	color: #818181;
+	/* box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.07); */
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+	font-size: 1em;
+}
+
+.GlowDemo_MixingHint {
+  max-width: 324px;
+  margin-left: -36px;
+  margin-top: 84px;
+}
+
+input[type=range] {
+    /*removes default webkit styles*/
+    -webkit-appearance: none;
+
+    /*fix for FF unable to apply focus style bug */
+    border: 1px solid white;
+
+    /*required for proper track sizing in FF*/
+    width: 190px;
+    height: 35px;
+
+    /*centering*/
+    vertical-align: middle;
+    display: table-cell;
+}
+input[type=range]::-webkit-slider-runnable-track {
+    width: 190px;
+    height: 3px;
+    background: #ddd;
+    border: none;
+    border-radius: 3px;
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    border: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #4bacff;
+    margin-top: -6px;
+}
+input[type=range]:focus {
+    outline: none;
+}
+input[type=range]:focus::-webkit-slider-runnable-track {
+    background: #ccc;
+}
+
+input[type=range]::-moz-range-track {
+    width: 190px;
+    height: 3px;
+    background: #ddd;
+    border: none;
+    border-radius: 3px;
+}
+input[type=range]::-moz-range-thumb {
+    border: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #4bacff;
+}
+
+/*hide the outline behind the border*/
+input[type=range]:-moz-focusring{
+    outline: 1px solid white;
+    outline-offset: -1px;
+}
+
+input[type=range]::-ms-track {
+    width: 190px;
+    height: 3px;
+
+    /*remove bg colour from the track, we'll use ms-fill-lower and ms-fill-upper instead */
+    background: transparent;
+
+    /*leave room for the larger thumb to overflow with a transparent border */
+    border-color: transparent;
+    border-width: 6px 0;
+
+    /*remove default tick marks*/
+    color: transparent;
+}
+input[type=range]::-ms-fill-lower {
+    background: #777;
+    border-radius: 10px;
+}
+input[type=range]::-ms-fill-upper {
+    background: #ddd;
+    border-radius: 10px;
+}
+input[type=range]::-ms-thumb {
+    border: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #4bacff;
+}
+input[type=range]:focus::-ms-fill-lower {
+    background: #888;
+}
+input[type=range]:focus::-ms-fill-upper {
+    background: #ccc;
+}

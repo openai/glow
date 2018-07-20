@@ -1,0 +1,72 @@
+/* mock.css
+ * 
+ * CSS for the mock-up mimicking the article around the demo.
+ */
+
+/* Global Rules */
+
+html {
+  font-family: Lato, Helvetica, Arial, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0em;
+  font-size: 1.1em;
+  line-height: 1.5em;
+}
+
+/* Article Title */
+
+div.TitlePanel {
+  background: rgb(52,51,57);
+  background: linear-gradient(349deg, rgb(85, 83, 95) 0%,
+    rgb(139, 139, 163) 100%);
+  color: rgb(255, 255, 255);
+  display: flex;
+  height: 337px;
+}
+
+div.Title {
+  margin: auto;
+  max-width: 555px;
+  text-align: center;
+}
+
+.Title h1 {
+  font-size: 2.4em;
+  line-height: 1.2em;
+  margin-bottom: 0.3em;
+}
+
+.Title time {
+  text-transform: uppercase;
+  color: #cacaca;
+  font-size: 0.7em;
+  font-weight: 700;
+  display: block;
+  text-align: center;
+}
+
+/* Article Content */
+
+div.Content {
+  color: #111;
+  max-width: 570px;
+  padding: 1em;
+  margin: 3em auto;
+  word-wrap: break-word;
+}
+
+.MockUpNotice {
+  color: #b32e2e;
+}
+
+.Content p {
+  margin: 2em auto;
+}
+.Content h1, h2, h3, h4, h5, h6 {
+  font-size: 1.3em;
+  margin-top: 2.5em;
+  margin-bottom: 0.5em;
+}
