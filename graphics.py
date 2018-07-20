@@ -10,8 +10,6 @@ def save_image(x, path):
     return
 
 # Assumes [NCHW] format
-
-
 def save_raster(x, path, rescale=False, width=None):
     t = threading.Thread(target=_save_raster, args=(x, path, rescale, width))
     t.start()
@@ -22,8 +20,6 @@ def _save_raster(x, path, rescale, width):
     save_image(x, path)
 
 # Shape: (n_patches,rows,columns,channels)
-
-
 def to_raster_old(x, rescale=False, width=None):
     x = np.transpose(x, (0, 3, 1, 2))
 

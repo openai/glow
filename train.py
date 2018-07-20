@@ -68,8 +68,6 @@ def init_visualizations(hps, model, logdir):
 # ===
 # Code for getting data
 # ===
-
-
 def get_data(hps, sess):
     if hps.image_size == -1:
         hps.image_size = {'mnist': 32, 'cifar10': 32, 'imagenet-oord': 64,
@@ -288,8 +286,6 @@ def train(sess, model, hps, logdir, visualise):
         _print("Finished!")
 
 # Get number of training and validation iterations
-
-
 def get_its(hps):
     # These run for a fixed amount of time. As anchored batch is smaller, we've actually seen fewer examples
     train_its = int(np.ceil(hps.n_train / (hps.n_batch_train * hvd.size())))
@@ -310,8 +306,6 @@ def get_its(hps):
 '''
 Create tensorflow session with horovod
 '''
-
-
 def tensorflow_session():
     # Init session and params
     config = tf.ConfigProto()

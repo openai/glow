@@ -343,8 +343,6 @@ def revnet2d(name, z, logdet, hps, reverse=False):
     return z, logdet
 
 # Simpler, new version
-
-
 @add_arg_scope
 def revnet2d_step(name, z, logdet, hps, reverse):
     with tf.variable_scope(name):
@@ -436,8 +434,6 @@ def f_resnet(name, h, width, n_out=None):
     return h
 
 # Invertible 1x1 conv
-
-
 @add_arg_scope
 def invertible_1x1_conv(name, z, logdet, reverse=False):
 
