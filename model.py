@@ -82,19 +82,18 @@ def abstract_model_xy(sess, hps, feeds, train_iterator, test_iterator, data_init
 def codec(hps):
 
     def encoder(z, objective):
-
+        eps = []
         for i in range(hps.n_levels):
             z, objective = revnet2d(str(i), z, objective, hps)
             if i < hps.n_levels-1:
-                z, objective = split2d("pool"+str(i), z, objective=objective)
+                z, objective, _eps = split2d("pool"+str(i), z, objective=objective)
+                eps.append(_eps)
+        return z, objective, eps
 
-        return z, objective
-
-    def decoder(z, eps_std):
-
+    def decoder(z, eps=[None]*hps.n_levels, eps_std=None):
         for i in reversed(range(hps.n_levels)):
             if i < hps.n_levels-1:
-                z = split2d_reverse("pool"+str(i), z, eps_std=eps_std)
+                z = split2d_reverse("pool"+str(i), z, eps=eps[i], eps_std=eps_std)
             z, _ = revnet2d(str(i), z, 0, hps, reverse=True)
 
         return z
@@ -120,15 +119,23 @@ def prior(name, y_onehot, hps):
         objective = pz.logp(z1)
         return objective
 
-    def sample(eps_std=None):
-        if eps_std is not None:
+    def sample(eps=None, eps_std=None):
+        if eps is not None:
+            # Already sampled eps. Don't use eps_std
+            z = pz.sample2(eps)
+        elif eps_std is not None:
+            # Sample with given eps_std
             z = pz.sample2(pz.eps * tf.reshape(eps_std, [-1, 1, 1, 1]))
         else:
+            # Sample normally
             z = pz.sample
 
         return z
 
-    return logp, sample
+    def eps(z1):
+        return pz.get_eps(z1)
+
+    return logp, sample, eps
 
 
 def model(sess, hps, train_iterator, test_iterator, data_init):
@@ -158,22 +165,19 @@ def model(sess, hps, train_iterator, test_iterator, data_init):
         with tf.variable_scope('model', reuse=reuse):
             y_onehot = tf.cast(tf.one_hot(y, hps.n_y, 1, 0), 'float32')
 
+            # Discrete -> Continuous
             objective = tf.zeros_like(x, dtype='float32')[:, 0, 0, 0]
-
             z = preprocess(x)
             z = z + tf.random_uniform(tf.shape(z), 0, 1./hps.n_bins)
-
             objective += - np.log(hps.n_bins) * np.prod(Z.int_shape(z)[1:])
 
             # Encode
             z = Z.squeeze2d(z, 2)  # > 16x16x12
-
-            z, objective = encoder(z, objective)
-
-            hps.top_shape = Z.int_shape(z)[1:]
+            z, objective, _ = encoder(z, objective)
 
             # Prior
-            logp, _ = prior("prior", y_onehot, hps)
+            hps.top_shape = Z.int_shape(z)[1:]
+            logp, _, _ = prior("prior", y_onehot, hps)
             objective += logp(z)
 
             # Generative loss
@@ -186,7 +190,6 @@ def model(sess, hps, train_iterator, test_iterator, data_init):
 
                 # Classification loss
                 h_y = tf.reduce_mean(z, axis=[1, 2])
-
                 y_logits = Z.linear_zeros("classifier", h_y, hps.n_y)
                 bits_y = tf.nn.softmax_cross_entropy_with_logits_v2(
                     labels=y_onehot, logits=y_logits) / np.log(2.)
@@ -201,22 +204,6 @@ def model(sess, hps, train_iterator, test_iterator, data_init):
 
         return bits_x, bits_y, classification_error
 
-    # === Sampling function
-    def f_decode(y, eps_std):
-        y_onehot = tf.cast(tf.one_hot(y, hps.n_y, 1, 0), 'float32')
-        with tf.variable_scope('model', reuse=True):
-
-            _, sample = prior("prior", y_onehot, hps)
-            z = sample(eps_std)
-
-            z = decoder(z, eps_std)
-
-            z = Z.unsqueeze2d(z, 2)  # 8x8x12 -> 16x16x3
-
-            x = postprocess(z)
-
-        return x
-
     def f_loss(iterator, is_training, reuse=False):
         if hps.direct_iterator and iterator is not None:
             x, y = iterator.get_next()
@@ -224,9 +211,7 @@ def model(sess, hps, train_iterator, test_iterator, data_init):
             x, y = X, Y
 
         bits_x, bits_y, pred_loss = _f_loss(x, y, is_training, reuse)
-
         local_loss = bits_x + hps.weight_y * bits_y
-
         stats = [local_loss, bits_x, bits_y, pred_loss]
         global_stats = Z.allreduce_mean(
             tf.stack([tf.reduce_mean(i) for i in stats]))
@@ -237,13 +222,98 @@ def model(sess, hps, train_iterator, test_iterator, data_init):
     m = abstract_model_xy(sess, hps, feeds, train_iterator,
                           test_iterator, data_init, lr, f_loss)
 
-    # === Decoding functions
-    m.eps_std = tf.placeholder(tf.float32, [None], name='eps_std')
-    x_sampled = f_decode(Y, m.eps_std)
+    # === Sampling function
+    def f_sample(y, eps_std):
+        with tf.variable_scope('model', reuse=True):
+            y_onehot = tf.cast(tf.one_hot(y, hps.n_y, 1, 0), 'float32')
 
-    def m_decode(_y, _eps_std):
+            _, sample, _ = prior("prior", y_onehot, hps)
+            z = sample(eps_std=eps_std)
+            z = decoder(z, eps_std=eps_std)
+            z = Z.unsqueeze2d(z, 2)  # 8x8x12 -> 16x16x3
+            x = postprocess(z)
+
+        return x
+
+    m.eps_std = tf.placeholder(tf.float32, [None], name='eps_std')
+    x_sampled = f_sample(Y, m.eps_std)
+
+    def sample(_y, _eps_std):
         return m.sess.run(x_sampled, {Y: _y, m.eps_std: _eps_std})
-    m.decode = m_decode
+    m.sample = sample
+
+    if hps.inference:
+        # === Encoder-Decoder functions
+        def f_encode(x, y, reuse=True):
+            with tf.variable_scope('model', reuse=reuse):
+                y_onehot = tf.cast(tf.one_hot(y, hps.n_y, 1, 0), 'float32')
+
+                # Discrete -> Continuous
+                objective = tf.zeros_like(x, dtype='float32')[:, 0, 0, 0]
+                z = preprocess(x)
+                z = z + tf.random_uniform(tf.shape(z), 0, 1. / hps.n_bins)
+                objective += - np.log(hps.n_bins) * np.prod(Z.int_shape(z)[1:])
+
+                # Encode
+                z = Z.squeeze2d(z, 2)  # > 16x16x12
+                z, objective, eps = encoder(z, objective)
+
+                # Prior
+                hps.top_shape = Z.int_shape(z)[1:]
+                logp, _, _eps = prior("prior", y_onehot, hps)
+                objective += logp(z)
+                eps.append(_eps(z))
+
+            return eps
+
+        def f_decode(y, eps, reuse=True):
+            with tf.variable_scope('model', reuse=reuse):
+                y_onehot = tf.cast(tf.one_hot(y, hps.n_y, 1, 0), 'float32')
+
+                _, sample, _ = prior("prior", y_onehot, hps)
+                z = sample(eps=eps[-1])
+                z = decoder(z, eps=eps[:-1])
+                z = Z.unsqueeze2d(z, 2)  # 8x8x12 -> 16x16x3
+                x = postprocess(z)
+
+            return x
+
+        enc_eps = f_encode(X, Y)
+        dec_eps = []
+        print(enc_eps)
+        for i, _eps in enumerate(enc_eps):
+            print(_eps)
+            dec_eps.append(tf.placeholder(tf.float32, _eps.get_shape().as_list(), name="dec_eps_" + str(i)))
+        dec_x = f_decode(Y, dec_eps)
+
+        eps_shapes = [_eps.get_shape().as_list()[1:] for _eps in enc_eps]
+
+        def flatten_eps(eps):
+            # [BS, eps_size]
+            return np.concatenate([np.reshape(e, (e.shape[0], -1)) for e in eps], axis=-1)
+
+        def unflatten_eps(feps):
+            index = 0
+            eps = []
+            bs = feps.shape[0]
+            for shape in eps_shapes:
+                eps.append(np.reshape(feps[:, index: index+np.prod(shape)], (bs, *shape)))
+                index += np.prod(shape)
+            return eps
+
+        # If model is uncondtional, always pass y = np.zeros([bs], dtype=np.int32)
+        def encode(x, y):
+            return flatten_eps(sess.run(enc_eps, {X: x, Y: y}))
+
+        def decode(y, feps):
+            eps = unflatten_eps(feps)
+            feed_dict = {Y: y}
+            for i in range(len(dec_eps)):
+                feed_dict[dec_eps[i]] = eps[i]
+            return sess.run(dec_x, feed_dict)
+
+        m.encode = encode
+        m.decode = decode
 
     return m
 
@@ -304,7 +374,7 @@ def revnet2d_step(name, z, logdet, hps, reverse):
             elif hps.flow_coupling == 1:
                 h = f("f1", z1, hps.width, n_z)
                 shift = h[:, :, :, 0::2]
-                #scale = tf.exp(h[:, :, :, 1::2])
+                # scale = tf.exp(h[:, :, :, 1::2])
                 scale = tf.nn.sigmoid(h[:, :, :, 1::2] + 2.)
                 z2 += shift
                 z2 *= scale
@@ -324,7 +394,7 @@ def revnet2d_step(name, z, logdet, hps, reverse):
             elif hps.flow_coupling == 1:
                 h = f("f1", z1, hps.width, n_z)
                 shift = h[:, :, :, 0::2]
-                #scale = tf.exp(h[:, :, :, 1::2])
+                # scale = tf.exp(h[:, :, :, 1::2])
                 scale = tf.nn.sigmoid(h[:, :, :, 1::2] + 2.)
                 z2 /= scale
                 z2 -= shift
@@ -384,7 +454,7 @@ def invertible_1x1_conv(name, z, logdet, reverse=False):
 
             w = tf.get_variable("W", dtype=tf.float32, initializer=w_init)
 
-            #dlogdet = tf.linalg.LinearOperator(w).log_abs_determinant() * shape[1]*shape[2]
+            # dlogdet = tf.linalg.LinearOperator(w).log_abs_determinant() * shape[1]*shape[2]
             dlogdet = tf.cast(tf.log(abs(tf.matrix_determinant(
                 tf.cast(w, 'float64')))), 'float32') * shape[1]*shape[2]
 
@@ -430,7 +500,7 @@ def invertible_1x1_conv(name, z, logdet, reverse=False):
             sign_s = tf.get_variable(
                 "sign_S", initializer=np_sign_s, trainable=False)
             log_s = tf.get_variable("log_S", initializer=np_log_s)
-            #S = tf.get_variable("S", initializer=np_s)
+            # S = tf.get_variable("S", initializer=np_s)
             u = tf.get_variable("U", initializer=np_u)
 
             p = tf.cast(p, dtype)
@@ -485,17 +555,24 @@ def split2d(name, z, objective=0.):
         pz = split2d_prior(z1)
         objective += pz.logp(z2)
         z1 = Z.squeeze2d(z1)
-        return z1, objective
+        eps = pz.get_eps(z2)
+        return z1, objective, eps
 
 
 @add_arg_scope
-def split2d_reverse(name, z, eps_std=None):
+def split2d_reverse(name, z, eps, eps_std):
     with tf.variable_scope(name):
         z1 = Z.unsqueeze2d(z)
         pz = split2d_prior(z1)
-        z2 = pz.sample
-        if eps_std is not None:
+        if eps is not None:
+            # Already sampled eps
+            z2 = pz.sample2(eps)
+        elif eps_std is not None:
+            # Sample with given eps_std
             z2 = pz.sample2(pz.eps * tf.reshape(eps_std, [-1, 1, 1, 1]))
+        else:
+            # Sample normally
+            z2 = pz.sample
         z = tf.concat([z1, z2], 3)
         return z
 

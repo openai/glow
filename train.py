@@ -25,11 +25,11 @@ def _print(*args, **kwargs):
 
 def init_visualizations(hps, model, logdir):
 
-    def decode_batch(y, eps):
+    def sample_batch(y, eps):
         n_batch = hps.local_batch_train
         xs = []
         for i in range(int(np.ceil(len(eps) / n_batch))):
-            xs.append(model.decode(
+            xs.append(model.sample(
                 y[i*n_batch:i*n_batch + n_batch], eps[i*n_batch:i*n_batch + n_batch]))
         return np.concatenate(xs)
 
@@ -47,14 +47,14 @@ def init_visualizations(hps, model, logdir):
         temperatures = [0., .25, .5, .6, .7, .8, .9, 1.]
 
         x_samples = []
-        x_samples.append(decode_batch(y, [.0]*n_batch))
-        x_samples.append(decode_batch(y, [.25]*n_batch))
-        x_samples.append(decode_batch(y, [.5]*n_batch))
-        x_samples.append(decode_batch(y, [.6]*n_batch))
-        x_samples.append(decode_batch(y, [.7]*n_batch))
-        x_samples.append(decode_batch(y, [.8]*n_batch))
-        x_samples.append(decode_batch(y, [.9] * n_batch))
-        x_samples.append(decode_batch(y, [1.]*n_batch))
+        x_samples.append(sample_batch(y, [.0]*n_batch))
+        x_samples.append(sample_batch(y, [.25]*n_batch))
+        x_samples.append(sample_batch(y, [.5]*n_batch))
+        x_samples.append(sample_batch(y, [.6]*n_batch))
+        x_samples.append(sample_batch(y, [.7]*n_batch))
+        x_samples.append(sample_batch(y, [.8]*n_batch))
+        x_samples.append(sample_batch(y, [.9] * n_batch))
+        x_samples.append(sample_batch(y, [1.]*n_batch))
         # previously: 0, .25, .5, .625, .75, .875, 1.
 
         for i in range(len(x_samples)):
@@ -115,7 +115,7 @@ def get_data(hps, sess):
         import data_loaders.get_mnist_cifar as v
         train_iterator, test_iterator, data_init = \
             v.get_data(hps.problem, hvd.size(), hvd.rank(), hps.dal, hps.local_batch_train,
-                       hps.local_batch_test, hps.local_batch_init,  hps.image_size)
+                       hps.local_batch_test, hps.local_batch_init, hps.image_size)
 
     else:
         raise Exception()
@@ -158,8 +158,44 @@ def main(hps):
     model = model.model(sess, hps, train_iterator, test_iterator, data_init)
 
     # Initialize visualization functions
-    draw_samples = init_visualizations(hps, model, logdir)
+    visualise = init_visualizations(hps, model, logdir)
 
+    if not hps.inference:
+        # Perform training
+        train(sess, model, hps, logdir, visualise)
+    else:
+        infer(sess, model, hps, test_iterator)
+
+
+def infer(sess, model, hps, iterator):
+    # Example of using model in inference mode. Load saved model using hps.restore_path
+    # Can provide x, y from files instead of dataset iterator
+    # If model is uncondtional, always pass y = np.zeros([bs], dtype=np.int32)
+    if hps.direct_iterator:
+        iterator = iterator.get_next()
+
+    xs = []
+    zs = []
+    for it in range(hps.full_test_its):
+        if hps.direct_iterator:
+            # replace with x, y, attr if you're getting CelebA attributes, also modify get_data
+            x, y = sess.run(iterator)
+        else:
+            x, y = iterator()
+
+        z = model.encode(x, y)
+        x = model.decode(y, z)
+        xs.append(x)
+        zs.append(z)
+
+    x = np.concatenate(xs, axis=0)
+    z = np.concatenate(zs, axis=0)
+    np.save('logs/x.npy', x)
+    np.save('logs/z.npy', z)
+    return zs
+
+
+def train(sess, model, hps, logdir, visualise):
     _print(hps)
     _print('Starting training. Logging to', logdir)
     _print('epoch n_processed n_images ips dtrain dtest dsample dtot train_results test_results msg')
@@ -237,7 +273,7 @@ def main(hps):
             # Sample
             t = time.time()
             if epoch == 1 or epoch == 10 or epoch % hps.epochs_full_sample == 0:
-                draw_samples(epoch)
+                visualise(epoch)
             dsample = time.time() - t
 
             if hvd.rank() == 0:
@@ -297,6 +333,8 @@ if __name__ == "__main__":
     parser.add_argument("--verbose", action='store_true', help="Verbose mode")
     parser.add_argument("--restore_path", type=str, default='',
                         help="Location of checkpoint to restore")
+    parser.add_argument("--inference", action="store_true",
+                        help="Use in inference mode")
     parser.add_argument("--logdir", type=str,
                         default='./logs', help="Location to save logs")
 
