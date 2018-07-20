@@ -2,6 +2,8 @@
 
 Code for reproducing results in ["Glow: Generative Flow with Invertible 1x1 Convolutions"](https://d4mucfpksywv.cloudfront.net/research-covers/glow/paper/glow.pdf)
 
+To use pretrained CelebA-HQ model, make your own manipulation vectors and run our interactive demo, check `demo` folder.
+
 ## Requirements
 
  - Tensorflow (tested with v1.8.0)
