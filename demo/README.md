@@ -11,6 +11,8 @@ To use pre-trained CelebA-HQ model for encoding/decoding/manipulating images, us
 
 If your image is not aligned, use `align_face.py` to align image.
 
+To create videos, check `videos.py`
+
 # Create manipulation vectors for an attribute of your choice
 Scrape images from the internet for an attribute of your choice (say red-hair vs not red-hair). Then, to obtain manipulation vectors from, use `get_manipulators.py`
 
