@@ -149,6 +149,8 @@ def unflatten_eps(feps):
 
 
 def encode(img):
+    if len(img.shape) == 3:
+        img = np.expand_dims(img, 0)
     bs = img.shape[0]
     assert img.shape[1:] == (256, 256, 3)
     feed_dict = {enc_x: img}
@@ -158,6 +160,8 @@ def encode(img):
 
 
 def decode(feps):
+    if len(feps.shape) == 1:
+        feps = np.expand_dims(feps, 0)
     bs = feps.shape[0]
     # assert len(eps) == n_eps
     # for i in range(n_eps):

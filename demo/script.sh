@@ -5,7 +5,7 @@ locale-gen en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
 # Pip packages for running server and face-aligned (dlib takes a while to install)
-pip install flask flask_cors tqdm opencv-python imutils dlib
+pip install flask flask_cors tqdm opencv-python imutils dlib imageio
 
 # Get model weights
 curl https://storage.googleapis.com/glow-demo/large3/graph_optimized.pb > graph_optimized.pb
