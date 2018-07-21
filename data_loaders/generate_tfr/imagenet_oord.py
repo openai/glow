@@ -14,8 +14,15 @@
 # ==============================================================================
 
 """
-Generate tfrecords for ImageNet 32x32 and 64x64. Downloaded from http://image-net.org/small/download.php
+Generate tfrecords for ImageNet 32x32 and 64x64.
 
+# Get images
+Downloaded images from http://image-net.org/small/download.php, and unzip them.
+(Move one file from training to test to have 50000 test images)
+
+# Get tfr file from images
+Use this script to generate the tfr file.
+python imagenet_oord.py --res [RES] --tfrecord_dir [OUTPUT_FOLDER] --write
 
 """
 
