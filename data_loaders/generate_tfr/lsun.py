@@ -13,18 +13,23 @@
 # limitations under the License.
 # ==============================================================================
 
-r"""LSUN dataset formatting.
-Download and format the LSUN dataset as follow:
+""""
+LSUN dataset
+
+# Get image files
+Download the LSUN dataset as follows:
 git clone https://github.com/fyu/lsun.git
 cd lsun
 python2.7 download.py -c [CATEGORY]
-Then unzip the downloaded .zip files before executing:
+Unzip the downloaded .zip files and execute:
 python2.7 data.py export [IMAGE_DB_PATH] --out_dir [LSUN_FOLDER] --flat
-Then use the script as follow:
-python lsun_formatting.py \
-    --file_out [OUTPUT_FILE_PATH_PREFIX] \
-    --fn_root [LSUN_FOLDER]
+
+# Get tfr file from images
+Use this script to generate the tfr file.
+python lsun.py --category [CATEGORY] --lsun_dir [LSUN_FOLDER] --tfrecord_dir [OUTPUT_FOLDER] --write [--realnvp]
+Without realnvp flag you get 256x256 centre cropped area downsampled images, with flag you get 96x96 images with realnvp preprocessing.
 """
+
 from __future__ import print_function
 
 import os
@@ -133,7 +138,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--category", type=str, help="LSUN category")
     parser.add_argument("--realnvp", action='store_true',
-                        help="Preprocess according to realnvp")
+                        help="Use this flag to do realnvp preprocessing instead of our centre-crops")
     parser.add_argument("--res", type=int, default=256, help="Image size")
     parser.add_argument("--lsun_dir", type=str,
                         required=True, help="place of lsun dir")
