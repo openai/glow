@@ -33,7 +33,7 @@ def get_z(x):
     bs = 10
     x = x.reshape((-1, bs, 256, 256, 3))
     z = []
-    for _x in tqdm(range(len(x))):
+    for _x in tqdm(x):
         z.append(model.encode(_x))
     z = np.concatenate(z, axis=0)
     return z
