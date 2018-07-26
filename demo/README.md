@@ -26,10 +26,6 @@ curl https://storage.googleapis.com/glow-demo/celeba-hq/z.npy > z.npy
 Then, run `get_manipulators.py`
 
 # Run server and client for demo
-Install pip requirements through requirements.txt
-
-dAlso libjpeg.so.9 is needed, which can be installed through `conda install -c conda-forge jpeg`.
-
 To run server for demo, run `python server.py`.
 
 
