@@ -1,3 +1,5 @@
+**Status:** Archive (code is provided as-is, no updates expected)
+
 # Glow
 
 Code for reproducing results in ["Glow: Generative Flow with Invertible 1x1 Convolutions"](https://d4mucfpksywv.cloudfront.net/research-covers/glow/paper/glow.pdf)
