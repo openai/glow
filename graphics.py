@@ -2,7 +2,7 @@ import numpy as np
 from PIL import Image
 import time
 import threading
-
+zxczczxc
 
 def save_image(x, path):
     im = Image.fromarray(x)
