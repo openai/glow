@@ -1,7 +1,7 @@
 # To get x.npy, attr.npy, and z.npy, run in command line
-# curl https://storage.googleapis.com/glow-demo/celeba-hq/x.npy > x.npy
-# curl https://storage.googleapis.com/glow-demo/celeba-hq/attr.npy > attr.npy
-# curl https://storage.googleapis.com/glow-demo/celeba-hq/z.npy > z.npy
+# curl https://openaipublic.azureedge.net/glow-demo/celeba-hq/x.npy > x.npy
+# curl https://openaipublic.azureedge.net/glow-demo/celeba-hq/attr.npy > attr.npy
+# curl https://openaipublic.azureedge.net/glow-demo/celeba-hq/z.npy > z.npy
 
 import pickle
 import numpy as np
