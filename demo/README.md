@@ -19,9 +19,9 @@ Scrape images from the internet for an attribute of your choice (say red-hair vs
 To see how it was done for the CelebA-HQ dataset (which has 40 attributes),
 first download the input images (x.npy), their attributes (attr.npy) and their encoding (z.npy)
 ```
-curl https://storage.googleapis.com/glow-demo/celeba-hq/x.npy > x.npy
-curl https://storage.googleapis.com/glow-demo/celeba-hq/attr.npy > attr.npy
-curl https://storage.googleapis.com/glow-demo/celeba-hq/z.npy > z.npy
+curl https://openaipublic.azureedge.net/glow-demo/celeba-hq/x.npy > x.npy
+curl https://openaipublic.azureedge.net/glow-demo/celeba-hq/attr.npy > attr.npy
+curl https://openaipublic.azureedge.net/glow-demo/celeba-hq/z.npy > z.npy
 ```
 Then, run `get_manipulators.py`
 
