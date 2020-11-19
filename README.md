@@ -21,7 +21,7 @@ To setup (Open)MPI, check instructions on Horovod github [page](https://github.c
 ## Download datasets
 For small scale experiments, use MNIST/CIFAR-10 (directly downloaded by `train.py` using keras)
 
-For larger scale experiments, the datasets used are in the Google Cloud locations `https://storage.googleapis.com/glow-demo/data/{dataset_name}-tfr.tar`. The dataset_names are below, we mention the exact preprocessing / downsampling method for a correct comparison of likelihood.
+For larger scale experiments, the datasets used are in the Google Cloud locations `https://openaipublic.azureedge.net/glow-demo/data/{dataset_name}-tfr.tar`. The dataset_names are below, we mention the exact preprocessing / downsampling method for a correct comparison of likelihood.
 
 Quantitative results
 - `imagenet-oord` - 20GB. Unconditional ImageNet 32x32 and 64x64, as described in PixelRNN/RealNVP papers (we downloaded [this](http://image-net.org/small/download.php) processed version).
@@ -34,7 +34,7 @@ Qualitative results
 
 To download and extract celeb for example, run
 ```
-wget https://storage.googleapis.com/glow-demo/data/celeba-tfr.tar
+wget https://openaipublic.azureedge.net/glow-demo/data/celeba-tfr.tar
 tar -xvf celeb-tfr.tar
 ```
 Change `hps.data_dir` in train.py file to point to the above folder (or use the `--data_dir` flag when you run train.py)
@@ -63,7 +63,7 @@ mpiexec -n 8 python train.py --problem cifar10 --image_size 32 --n_level 3 --dep
 
 Pretrained models, logs and samples
 ```
-wget https://storage.googleapis.com/glow-demo/logs/abl-[reverse/shuffle/1x1]-[add/aff].tar
+wget https://openaipublic.azureedge.net/glow-demo/logs/abl-[reverse/shuffle/1x1]-[add/aff].tar
 ```
 
 ##### CIFAR-10 Quantitative result
@@ -90,7 +90,7 @@ mpiexec -n 8 python train.py --problem lsun_realnvp --category [bedroom/church_o
 
 Pretrained models, logs and samples
 ```
-wget https://storage.googleapis.com/glow-demo/logs/lsun-rnvp-[bdr/crh/twr].tar
+wget https://openaipublic.azureedge.net/glow-demo/logs/lsun-rnvp-[bdr/crh/twr].tar
 ```
 
 ##### CelebA-HQ 256x256 Qualitative result
@@ -106,7 +106,7 @@ mpiexec -n 40 python train.py --problem lsun --category [bedroom/church_outdoor/
 
 Logs and samples
 ```
-wget https://storage.googleapis.com/glow-demo/logs/lsun-bdr-[96/128].tar
+wget https://openaipublic.azureedge.net/glow-demo/logs/lsun-bdr-[96/128].tar
 ```
 
 ##### Conditional CIFAR-10 Qualitative result
