@@ -28,6 +28,7 @@ Then, run `get_manipulators.py`
 # Run server and client for demo
 To run server for demo, run `python server.py`.
 
+
 To run client, run `python -m http.server` (starts a local http server at port 8000) and open `0.0.0.0:8000/web` in your browser.
 
 To test client, upload `test/img.png`. You should see aligned image and be able to move sliders.
