@@ -1,4 +1,4 @@
-Code for the demo used in blog post.
+Code for the demo used in [blog post](https://blog.openai.com/glow/).
 
 # Setup
 Run `./script.sh`.
