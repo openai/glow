@@ -388,10 +388,11 @@ def shuffle_features(name, h, indices=None, return_indices=False, reverse=False)
             n_channels = int(h.get_shape()[-1])
             indices = list(range(n_channels))
             rng.shuffle(indices)
-            # Reverse it
-            indices_inverse = [0]*n_channels
-            for i in range(n_channels):
-                indices_inverse[indices[i]] = i
+
+        # Reverse it
+        indices_inverse = [0]*n_channels
+        for i in range(n_channels):
+            indices_inverse[indices[i]] = i
 
         tf_indices = tf.get_variable("indices", dtype=tf.int32, initializer=np.asarray(
             indices, dtype='int32'), trainable=False)
