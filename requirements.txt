@@ -1,5 +1,5 @@
-tensorflow-gpu==1.8.0
-keras==2.2.0
-pillow==5.2.0
-toposort==1.5
-horovod==0.13.8
+tensorflow-gpu==2.12.0
+keras==3.4.1
+pillow==10.4.0
+toposort==1.10
+horovod==0.28.1
